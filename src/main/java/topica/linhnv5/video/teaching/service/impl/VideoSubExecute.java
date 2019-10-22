@@ -3,6 +3,7 @@ package topica.linhnv5.video.teaching.service.impl;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -22,15 +23,17 @@ import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.probe.FFmpegStream;
 import net.bramp.ffmpeg.progress.Progress;
 import net.bramp.ffmpeg.progress.ProgressListener;
+import topica.linhnv5.video.teaching.dictionary.Dictionary;
+import topica.linhnv5.video.teaching.dictionary.model.WordInfo;
 import topica.linhnv5.video.teaching.lyric.Lyric;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
 import topica.linhnv5.video.teaching.model.SubVideoTaskResult;
 import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.service.VideoSubException;
+import topica.linhnv5.video.teaching.zing.ZingMp3;
 import topica.linhnv5.video.teaching.zing.model.SearchItem;
 import topica.linhnv5.video.teaching.zing.model.StreamResult;
-import topica.linhnv5.video.teaching.zing.service.ZingMp3;
 
 @Component
 public class VideoSubExecute {
@@ -44,11 +47,59 @@ public class VideoSubExecute {
 	@Value("${video.teaching.outfolder}")
 	private String outFolder;
 
+	@Value("${video.teaching.fontfile}")
+	private String fontFile;
+
 	@Autowired
 	private FFprobe ffprobe;
 
 	@Autowired
 	private FFmpeg ffmpeg;
+
+	@Autowired
+	private Dictionary dictionary;
+
+	private String drawBox(double from, double to, int x, int y, int w, int h, String color, float opacity) {
+		return new StringBuilder(",drawbox=").append(x).append(":").append(y).append(":").append(w).append(":").append(h)
+				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
+				.append(":color=").append(color).append("@").append(opacity).append(":t=fill")
+				.toString();
+	}
+
+	private String drawText(String text, double from, double to, int x, int y, String color, long size) {
+		return new StringBuilder(",drawtext=text='").append(text.replaceAll("\'", "\'\'").replaceAll("\"", "\"\"")).append("'")
+				.append(":x=").append(x).append(":y=").append(y)
+				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
+				.append(":fontfile='").append(fontFile).append("'")
+				.append(":fontcolor=").append(color)
+				.append(":fontsize=").append(size)
+				.toString();
+	}
+
+	private String drawWordInfo(WordInfo info, double from, double to, int x, int y) {
+		String wordColor = "yellow", boxColor = "black"; float boxCapacity = 0.75F;
+		int w = info.getWordWithType().length()*15, h = 0;
+
+		StringBuilder buff = new StringBuilder(drawText(info.getWordWithType(), from, to, x+5, y+5, wordColor, 25)); h += 30;
+
+		if (info.getPronoun() != null && !info.getPronoun().equals("")) {
+			buff.append(drawText(info.getPronoun(), from, to, x+5, y+5+h, wordColor, 20));
+			h += 20;
+			if (info.getPronoun().length() * 10 > w)
+				w = info.getPronoun().length()*10;
+		}
+
+		if (info.getTrans() != null && !info.getTrans().equals("")) {
+			buff.append(drawText(info.getTrans(),   from, to, x+5, y+5+h, wordColor, 20));
+			h += 20;
+			if (info.getTrans().length() * 10 > w)
+				w = info.getTrans().length()*10;
+		}
+
+		return new StringBuilder(drawBox(from, to, x, y, w+10, h+10, boxColor, boxCapacity))
+				.append(buff.toString())
+				.toString();
+	}
 
 	@Async("threadPoolExecutor")
 	public Future<SubVideoTaskResult> doAddSubToVideo(String inputFileName, String track, String artist, Task<SubVideoTaskResult> task) {
@@ -72,98 +123,128 @@ public class VideoSubExecute {
 			// Print the lyric url
 			System.out.println("Lyric: "+item.getLyric());
 
+			// Check lyric
+			if (item.getLyric() == null)
+				throw new Exception("Could not find the lyric!");
+
 			// Get the lyric, format lrc
-			SongLyric songLyric = LyricConverter.readLRC(ZingMp3.sendRequest(item.getLyric()));
+			SongLyric songLyric;
+
+			try {
+				songLyric = LyricConverter.readLRC(ZingMp3.sendRequest(item.getLyric()));
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw new Exception("An error occur when get the lyric!");
+			}
 
 			// Mark some text
 			List<Lyric> listOfLyric = songLyric.getSong();
 
-			for (Lyric l : listOfLyric)
-				l.markSomeText();
+			int nText = 0;
+
+			for (Lyric l : listOfLyric) {
+				if (r.nextInt(100) < 40) {
+					if (l.markSomeText(dictionary) != null)
+						nText++;
+				}
+			}
+
+			System.out.println("NText: "+nText);
 
 			// Convert it to srt
 			String lyric = LyricConverter.writeSRT(songLyric);
 
 			// Write subtitle to file
-			FileOutputStream fos = new FileOutputStream(new File(input.getPath()+".srt"));
-			fos.write(lyric.getBytes("UTF-8"));
-			fos.close();
-
-			//
-			System.out.println("Do FFprobe");
-
-			// Do ffprobe
-			FFmpegProbeResult probeResult = ffprobe.probe(input.getPath());
-
-			FFmpegStream stream = probeResult.getStreams().get(0);
-
-			//
-			System.out.println("Do FFmpeg");
-
-			int width  = stream.width;
-			int height = stream.height;
-
-			// Make filter
-			StringBuilder vfilter = new StringBuilder("subtitles='input/"+input.getName()+".srt'");
-
-			for (Lyric l : listOfLyric) {
-				if (l.getMark() != null)
-					vfilter
-						.append(",drawtext=text='").append(l.getMark()).append("'")
-						.append(":enable='between(t,")
-							.append(l.getFromTimestamp())
-							.append(",")
-							.append(l.getToTimestamp())
-							.append(")'")
-						.append(":box=1").append(":boxcolor=black")
-						.append(":fontcolor=yellow")
-						.append(":fontsize=40")
-						.append(":x=").append(width/10)
-						.append(":y=").append(height/2)
-						;
-			}
-			
-			// Do ffmpeg
-			FFmpegBuilder builder = ffmpeg.builder()
-				.addInput(input.getPath())
-				.overrideOutputFiles(true)
-				.addOutput(output.getPath())
-				.setFormat("mp4")
-				.setVideoCodec("libx264")
-				.setVideoFilter(vfilter.toString())
-				.done();
-
-			// create ffmpeg executor
-			FFmpegExecutor executor = new FFmpegExecutor(ffmpeg, ffprobe);
-
-			// Run a one-pass encode
-			FFmpegJob job = executor.createJob(builder, new ProgressListener() {
-
-				// Using the FFmpegProbeResult determine the duration of the input
-				final double duration_ns = probeResult.getFormat().duration * TimeUnit.SECONDS.toNanos(1);
-
-				@Override
-				public void progress(Progress progress) {
-					double percentage = progress.out_time_ns / duration_ns;
-
-					// Set task progress
-					task.setProgress((byte)(percentage * 100));
-
-					// Print out interesting information about the progress
-					System.out.println(String.format(
-						"[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
-						percentage * 100,
-						progress.status,
-						progress.frame,
-						FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
-						progress.fps.doubleValue(),
-						progress.speed
-					));
+			FileOutputStream fos = null;
+			try {
+				fos = new FileOutputStream(new File(input.getPath()+".srt"));
+				fos.write(lyric.getBytes("UTF-8"));
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw new Exception("Could not write subtitles file, progress fail!");
+			} finally {
+				if (fos != null) {
+					try {
+						fos.close();
+					} catch(Exception e) {
+					}
 				}
-			});
-			
-			// Run job
-			job.run();
+			}
+
+			try {
+				//
+				System.out.println("Do FFprobe");
+
+				// Do ffprobe
+				FFmpegProbeResult probeResult = ffprobe.probe(input.getPath());
+
+				FFmpegStream stream = probeResult.getStreams().get(0);
+
+				//
+				System.out.println("Do FFmpeg");
+
+				int width  = 640;
+				int height = stream.height*640/stream.width;
+
+				// Make filter
+				StringBuilder vfilter = new StringBuilder("scale=640:-1[inscale];")
+										.append("[inscale]subtitles=\'input/"+input.getName()+".srt\'");
+
+				for (Lyric l : listOfLyric) {
+					if (l.getMark() != null)
+						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width/10, height/2-40));
+				}
+
+				vfilter.append("[in];")
+						.append("movie=input/image/topica.png,scale=125:-1[watermark];")
+						.append("[in][watermark]overlay=10:10");
+
+
+				// Do ffmpeg
+				FFmpegBuilder builder = ffmpeg.builder()
+					.addInput(input.getPath())
+					.overrideOutputFiles(true)
+					.addOutput(output.getPath())
+					.setFormat("mp4")
+					.setVideoCodec("libx264")
+					.setVideoFilter(vfilter.toString())
+					.done();
+
+				// create ffmpeg executor
+				FFmpegExecutor executor = new FFmpegExecutor(ffmpeg, ffprobe);
+
+				// Run a one-pass encode
+				FFmpegJob job = executor.createJob(builder, new ProgressListener() {
+
+					// Using the FFmpegProbeResult determine the duration of the input
+					final double duration_ns = probeResult.getFormat().duration * TimeUnit.SECONDS.toNanos(1);
+
+					@Override
+					public void progress(Progress progress) {
+						double percentage = progress.out_time_ns / duration_ns;
+
+						// Set task progress
+						task.setProgress((byte)(percentage * 100));
+
+						// Print out interesting information about the progress
+						System.out.println(String.format(
+							"[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
+							percentage * 100,
+							progress.status,
+							progress.frame,
+							FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
+							progress.fps.doubleValue(),
+							progress.speed
+						));
+					}
+				});
+				
+				// Run job
+				job.run();
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw new Exception("Error occur when create video file!");
+			}
 
 			//
 			System.out.println("Done! Set output to task");
@@ -183,9 +264,20 @@ public class VideoSubExecute {
 		return new AsyncResult<SubVideoTaskResult>(result);
 	}
 
+	public static Random r = new Random();
+
 	@Async("threadPoolExecutor")
 	public Future<SubVideoTaskResult> doCreateSubVideoFromMusic(String track, String artist, Task<SubVideoTaskResult> task) throws VideoSubException {
 		SubVideoTaskResult result = new SubVideoTaskResult();
+
+		String inputFileName = track.replaceAll(" ", "_")+"("+artist.replaceAll(" ", "_")+").mp4";
+
+		// Input and output file
+		File input  = new File(inFolder  + inputFileName);
+		File output = new File(outFolder + inputFileName);
+
+		// Back image
+		File back   = new File(inFolder  + "image" + File.separator + "back" + r.nextInt(5) + ".jpg");
 
 		try {
 			//
@@ -200,126 +292,187 @@ public class VideoSubExecute {
 
 			// The ID
 			String id = item.getId();
-			
+
 			// Print the lyric url
-			System.out.println("Lyric: "+item.getLyric());
+			System.out.println("Id: "+id+" lyric: "+item.getLyric());
+
+			// Check lyric
+			if (item.getLyric() == null)
+				throw new Exception("Could not find the lyric!");
 
 			// Get the lyric, format lrc
-			SongLyric songLyric = LyricConverter.readLRC(ZingMp3.sendRequest(item.getLyric()));
+			SongLyric songLyric;
+
+			try {
+				songLyric = LyricConverter.readLRC(ZingMp3.sendRequest(item.getLyric()));
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw new Exception("An error occur when get the lyric!");
+			}
 
 			// Mark some text
 			List<Lyric> listOfLyric = songLyric.getSong();
 
-			for (Lyric l : listOfLyric)
-				l.markSomeText();
+			int nText = 0;
+
+			for (Lyric l : listOfLyric) {
+				if (r.nextInt(100) < 40) {
+					if (l.markSomeText(dictionary) != null)
+						nText++;
+				}
+			}
+
+			System.out.println("NText: "+nText);
 
 			// Convert it to srt
 			String lyric = LyricConverter.writeSRT(songLyric);
 
 			// Write subtitle to file
-			FileOutputStream fos = new FileOutputStream(new File(inFolder+id+".srt"));
-			fos.write(lyric.getBytes("UTF-8"));
-			fos.close();
+			FileOutputStream fos = null;
+			try {
+				fos = new FileOutputStream(new File(input.getPath()+".srt"));
+				fos.write(lyric.getBytes("UTF-8"));
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw new Exception("Could not write subtitles file, progress fail!");
+			} finally {
+				if (fos != null) {
+					try {
+						fos.close();
+					} catch(Exception e) {
+					}
+				}
+			}
 
 			// get stream mp3
-			StreamResult streamResult = zingMp3.getStream(id);
+			String link;
 
-			// Link address
-			String link = streamResult.getData().getData().getLink320().equals("") ? streamResult.getData().getData().getLink128() : streamResult.getData().getData().getLink320();
+			try {
+				// Get link stream
+				StreamResult streamResult = zingMp3.getStream(id);
 
+				String link128 = streamResult.getData().getData().getLink128();
+				String link320 = streamResult.getData().getData().getLink320();
+
+				// Link address
+				link = link320.equals("") ? link128 : link320;
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw new Exception("An error occur when get the mp3 stream info!");
+			}
+
+			// Print link
 			System.out.println("Link: "+link);
 
 			// Get file
-			byte[] mp3Data = ZingMp3.sendRequestBinary("http:"+link);
+			fos = null;
 
-			// Write mp3 to file
-			fos = new FileOutputStream(new File(inFolder+id+".mp3"));
-			fos.write(mp3Data);
-			fos.close();
+			try {
+				// Get stream data
+				byte[] mp3Data = ZingMp3.sendRequestBinary("http:"+link);
 
-			//
-			System.out.println("Do FFprobe");
-
-			// Do ffprobe
-			FFmpegProbeResult probeResult = ffprobe.probe(inFolder+id+".mp3");
-
-			int width  = 852;
-			int height = 480;
-
-			//
-			System.out.println("Do FFmpeg");
-
-			// Make filter
-			StringBuilder vfilter = new StringBuilder("subtitles='input/"+id+".srt'");
-
-			for (Lyric l : listOfLyric) {
-				if (l.getMark() != null)
-					vfilter
-						.append(",drawtext=text='").append(l.getMark()).append("'")
-						.append(":enable='between(t,")
-							.append(l.getFromTimestamp())
-							.append(",")
-							.append(l.getToTimestamp())
-							.append(")'")
-						.append(":box=1").append(":boxcolor=black")
-						.append(":fontcolor=yellow")
-						.append(":fontsize=40")
-						.append(":x=").append(width/10)
-						.append(":y=").append(height/2)
-						;
+				// Write mp3 to file
+				fos = new FileOutputStream(input);
+				fos.write(mp3Data);
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw new Exception("Could not get mp3 file!");
+			} finally {
+				if (fos != null) {
+					try {
+						fos.close();
+					} catch(Exception e) {
+					}
+				}
 			}
 
-//			ffmpeg.exe -loop 1 -i .\background.jpg -i .\ZW68I7AW.mp3 -y -r 30 -b 2500K -acodec ac3 -ab 384k -vcodec mpeg4 -vframes 6210 result.mp4
+			try {
+				//
+				System.out.println("Do FFprobe");
 
-			// Do ffmpeg
-			FFmpegBuilder builder = ffmpeg.builder()
-				.addInput("D:\\Study\\Topica\\Project\\Video\\input\\background.jpg")
-				.addExtraArgs("-loop", "1")
-				.addInput(inFolder+id+".mp3")
-				.overrideOutputFiles(true)
-				.addOutput(outFolder+id+".mp4")
-				.setAudioCodec("aac")
-				.setAudioBitRate(384_000)
-				.setAudioSampleRate(48_000)
-				.setVideoCodec("mpeg4")
-				.setVideoBitRate(2500_000)
-				.setVideoFrameRate(30)
-				.setFrames((int)probeResult.getFormat().duration*30)
-				.addExtraArgs("-filter_complex", vfilter.toString())
-				.addExtraArgs("-shortest")
-				.done();
+				// Do ffprobe
+				FFmpegProbeResult probeResult  = ffprobe.probe(input.getPath());
 
-			// create ffmpeg executor
-			FFmpegExecutor executor = new FFmpegExecutor(ffmpeg, ffprobe);
+				FFmpegProbeResult probeResult2 = ffprobe.probe(back.getPath());
+				FFmpegStream stream = probeResult2.getStreams().get(0);
 
-			// Run a one-pass encode
-			FFmpegJob job = executor.createJob(builder, new ProgressListener() {
+				//
+				System.out.println("Do FFmpeg");
 
-				// Using the FFmpegProbeResult determine the duration of the input
-				final double duration_ns = probeResult.getFormat().duration * TimeUnit.SECONDS.toNanos(1);
+				int width  = 640;
+				int height = stream.height*640/stream.width;
 
-				@Override
-				public void progress(Progress progress) {
-					double percentage = progress.out_time_ns / duration_ns;
+				// Make filter
+				StringBuilder vfilter = new StringBuilder("[0:v]scale=640:-2[in];")
+											.append("[in]subtitles='input/"+input.getName()+".srt'")
+											;
 
-					// Set task progress
-					task.setProgress((byte)(percentage * 100));
-
-					// Print out interesting information about the progress
-					System.out.println(String.format(
-						"[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
-						percentage * 100,
-						progress.status,
-						progress.frame,
-						FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
-						progress.fps.doubleValue(),
-						progress.speed
-					));
+				for (Lyric l : listOfLyric) {
+					if (l.getMark() != null)
+						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width/10, height/2-40));
 				}
-			});
-			
-			// Run job
-			job.run();
+
+				vfilter.append("[bg];")
+						.append("movie=input/image/topica.png,scale=125:-1[watermark];")
+						.append("[bg][watermark]overlay=10:10")
+						;
+
+				// Do ffmpeg
+				FFmpegBuilder builder = ffmpeg.builder()
+					.addInput(back.getPath())
+					.addInput(input.getPath())
+					.addExtraArgs("-loop", "1")
+					.setComplexFilter(vfilter.toString())
+					.overrideOutputFiles(true)
+					.addOutput(output.getPath())
+					.setFormat("mp4")
+					.setAudioCodec("aac")
+					.setAudioBitRate(384_000)
+					.setAudioSampleRate(48_000)
+					.setVideoCodec("libx264")
+					.setVideoBitRate(2500_000)
+					.setVideoFrameRate(30)
+					.addExtraArgs("-map", "0:v")
+					.addExtraArgs("-map", "1:a")
+					.addExtraArgs("-map_metadata", "1")
+					.addExtraArgs("-shortest")
+					.done();
+
+				// create ffmpeg executor
+				FFmpegExecutor executor = new FFmpegExecutor(ffmpeg, ffprobe);
+
+				// Run a one-pass encode
+				FFmpegJob job = executor.createJob(builder, new ProgressListener() {
+
+					// Using the FFmpegProbeResult determine the duration of the input
+					final double duration_ns = probeResult.getFormat().duration * TimeUnit.SECONDS.toNanos(1);
+
+					@Override
+					public void progress(Progress progress) {
+						double percentage = progress.out_time_ns / duration_ns;
+
+						// Set task progress
+						task.setProgress((byte)(percentage * 100));
+
+						// Print out interesting information about the progress
+						System.out.println(String.format(
+							"[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
+							percentage * 100,
+							progress.status,
+							progress.frame,
+							FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
+							progress.fps.doubleValue(),
+							progress.speed
+						));
+					}
+				});
+				
+				// Run job
+				job.run();
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw new Exception("Error occur when create video file!");
+			}
 
 			//
 			System.out.println("Done! Set output to task");
@@ -331,7 +484,6 @@ public class VideoSubExecute {
 			// Set the output file
 			result.setOutput(new File(outFolder+id+".mp4"));
 		} catch(Exception e) {
-			e.printStackTrace();
 			task.setStatus(Task.Status.FINISHED);
 			result.setException(e);
 		}

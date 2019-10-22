@@ -1,4 +1,4 @@
-package topica.linhnv5.video.teaching.zing.service;
+package topica.linhnv5.video.teaching.zing;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -10,9 +10,13 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,13 +31,15 @@ import topica.linhnv5.video.teaching.zing.model.StreamResult;
 @Service
 public class ZingMp3 {
 
-	@Value("${zing.mp3.sig}")
-	private String sig;
-
 	@Value("${zing.mp3.apikey}")
 	private String apiKey;
 
+	@Value("${zing.mp3.seckey}")
+	private String secretKey;
+
 	public static String sendRequest(String requestString) throws ZingServiceException {
+		System.out.println("Request: "+requestString);
+
 		StringBuffer buffer = new StringBuffer();
 
 		try {
@@ -59,27 +65,12 @@ public class ZingMp3 {
 	}
 
 	public static byte[] sendRequestBinary(String requestString) throws ZingServiceException {
-//		System.out.println("Request: "+requestString);
+		System.out.println("Request: "+requestString);
+
 		try {
 			URL url = new URL(requestString);
 
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-//			boolean redirect = false;
-//
-//			// normally, 3xx is redirect
-//			int status = conn.getResponseCode();
-//			if (status != HttpURLConnection.HTTP_OK) {
-//				if (status == HttpURLConnection.HTTP_MOVED_TEMP
-//					|| status == HttpURLConnection.HTTP_MOVED_PERM
-//						|| status == HttpURLConnection.HTTP_SEE_OTHER)
-//				redirect = true;
-//			}
-//
-//			System.out.println("Response Code ... " + status+" location="+conn.getHeaderField("Location"));
-//
-//			if (redirect)
-//				return sendRequestBinary(conn.getHeaderField("Location"));
 
 			InputStream is = conn.getInputStream();
 
@@ -124,6 +115,36 @@ public class ZingMp3 {
 		return paramString;
 	}
 
+	private long getCTime() {
+		return System.currentTimeMillis() / 1000;
+	}
+
+	private String bytesToHex(byte[] hash) {
+		StringBuffer hexString = new StringBuffer();
+
+		for (int i = 0; i < hash.length; i++) {
+			String hex = Integer.toHexString(0xff & hash[i]);
+			if (hex.length() == 1)
+				hexString.append('0');
+			hexString.append(hex);
+		}
+
+		return hexString.toString();
+	}
+
+	private String getHash265(String mss) throws Exception {
+		return bytesToHex(MessageDigest.getInstance("SHA-256").digest(mss.getBytes("UTF-8")));
+	}
+
+	private String getHMAC512(String mss) throws Exception {
+		final String HMAC_SHA512 = "HmacSHA512";
+
+		Mac sha512_HMAC = Mac.getInstance(HMAC_SHA512);      
+		sha512_HMAC.init(new SecretKeySpec(secretKey.getBytes("UTF-8"), HMAC_SHA512));
+
+        return bytesToHex(sha512_HMAC.doFinal(mss.getBytes("UTF-8")));
+	}
+
 	/**
 	 * Search track in zingmp3, return infomation about track include lyric, music stream, ...
 	 * @param trackName  name of track
@@ -134,9 +155,19 @@ public class ZingMp3 {
 	public SearchItem getMatchingTrack(String trackName, String artistName) throws ZingServiceException {
 		Map<String, Object> params = new HashMap<String, Object>();
 
-		params.put("sig", sig);
+		long ctime = getCTime();
+		String sig;
+
+		try {
+			String sha256 = getHash265(String.format("ctime=%d", ctime));
+			sig = getHMAC512(String.format("/search%s", sha256));
+		} catch(Exception e) {
+			throw new ZingServiceException("");
+		}
+
 		params.put("api_key", apiKey);
-		params.put("ctime", 1571114522);
+		params.put("sig",   sig);
+		params.put("ctime", ctime);
 		params.put("type", "song");
 		params.put("start", 0);
 		params.put("count", 20);
@@ -144,8 +175,6 @@ public class ZingMp3 {
 
 		String request  = getURLString("https://zingmp3.vn/api/search", params);
 		String response = sendRequest(request);
-
-		System.out.println("Request: "+request);
 
 		Gson gson = new Gson();
 
@@ -163,12 +192,28 @@ public class ZingMp3 {
 		return null;
 	}
 
+	/**
+	 * Get streaming info
+	 * @param id id of track
+	 * @return   stream result
+	 * @throws ZingServiceException
+	 */
 	public StreamResult getStream(String id) throws ZingServiceException {
 		Map<String, Object> params = new HashMap<String, Object>();
 
+		long ctime = getCTime();
+		String sig;
+
+		try {
+			String sha256 = getHash265(String.format("ctime=%did=%s", ctime, id));
+			sig = getHMAC512(String.format("/song/get-streamings%s", sha256));
+		} catch(Exception e) {
+			throw new ZingServiceException("");
+		}
+
 		params.put("api_key", apiKey);
-		params.put("sig", "d8eeab57e9a8cf63bc7404113c6f3c3df056c6b466cfdb896c4cecf2f59e59ed9d25310ddb794c756d176f0fa4881526b5434037a5dc7131b90700eb42c4c654");
-		params.put("ctime", 1571293130);
+		params.put("sig",   sig);
+		params.put("ctime", ctime);
 		params.put("id", id);
 
 		String request  = getURLString("https://zingmp3.vn/api/song/get-streamings", params);

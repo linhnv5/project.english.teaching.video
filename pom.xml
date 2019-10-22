@@ -22,6 +22,8 @@
 		<java.version>1.8</java.version>
 		<bramp.ffmpeg.version>0.6.2</bramp.ffmpeg.version>
 		<javacpp.ffmpeg.version>3.2.1-1.3</javacpp.ffmpeg.version>
+		<jsoup.version>1.8.3</jsoup.version>
+		<swagger.version>2.9.2</swagger.version>
 	</properties>
 
 	<dependencies>
@@ -30,10 +32,8 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
-		<!--dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency-->
+		<!--dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-data-jpa</artifactId> 
+			</dependency -->
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -72,6 +72,27 @@
 			<groupId>org.bytedeco.javacpp-presets</groupId>
 			<artifactId>ffmpeg-platform</artifactId>
 			<version>${javacpp.ffmpeg.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>${jsoup.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/io.springfox/springfox-swagger2 -->
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>${swagger.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/io.springfox/springfox-swagger-ui -->
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger-ui</artifactId>
+			<version>${swagger.version}</version>
 		</dependency>
 	</dependencies>
 

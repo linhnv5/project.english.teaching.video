@@ -15,10 +15,6 @@ import net.bramp.ffmpeg.RunProcessFunction;
 @SpringBootApplication
 public class EnglishTeachingVideoApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(EnglishTeachingVideoApplication.class, args);
-	}
-
 	@Value("${ffmpeg.path}")
 	private String ffmpegPath;
 
@@ -46,6 +42,10 @@ public class EnglishTeachingVideoApplication {
 	@Bean
 	public FFprobe getFFprobe() throws IOException {
 		return new FFprobe(ffprobePath, runProcessFunction);
+	}
+
+	public static void main(String[] args) {
+		SpringApplication.run(EnglishTeachingVideoApplication.class, args);
 	}
 
 }

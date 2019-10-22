@@ -4,6 +4,9 @@ import java.util.Random;
 
 import org.springframework.util.StringUtils;
 
+import topica.linhnv5.video.teaching.dictionary.Dictionary;
+import topica.linhnv5.video.teaching.dictionary.model.WordInfo;
+
 /**
  * Lyric: Contain timestamp and lyric text.
  *
@@ -16,7 +19,7 @@ public class Lyric {
 	private double to;
 
 	private String lyric;
-	private String mark;
+	private WordInfo mark;
 
 	/************************************************************
 	 * Default Constructor: Creates the object with default Lyric state
@@ -88,7 +91,7 @@ public class Lyric {
 	 * 
 	 * @author ljnk975
 	 */
-	public String getMark() {
+	public WordInfo getMark() {
 		return mark;
 	}
 
@@ -182,23 +185,29 @@ public class Lyric {
 
 	public static Random r = new Random();
 
-	public void markSomeText() {
+	public String markSomeText(Dictionary dictionary) {
 		if (lyric.equals("") || StringUtils.startsWithIgnoreCase(lyric, "Bài hát") || StringUtils.startsWithIgnoreCase(lyric, "Ca sĩ"))
-			return;
+			return null;
 
 		String[] aLyric = lyric.split(" ");
 
-		if (aLyric.length > 0) {
-			int next;
-			do {
-				next = r.nextInt(aLyric.length);
-			} while(aLyric[next].contains("'"));
-			this.mark = aLyric[next];
+		if (aLyric.length == 0)
+			return null;
 
-			aLyric[next] = "<b><font color=\"yellow\">"+aLyric[next]+"</font></b>";
-		}
+		int next, i = 0; WordInfo wordInfo;
 
+		do {
+			if (++i >= aLyric.length)
+				return null;
+
+			next = r.nextInt(aLyric.length);
+		} while(aLyric[next].contains("'") || (wordInfo = dictionary.searchWord(aLyric[next])) == null);
+
+		this.mark = wordInfo;
+		aLyric[next] = "<b><font color=\"yellow\">"+aLyric[next]+"</font></b>";
 		this.lyric = String.join(" ", aLyric);
+
+		return this.mark.getWord();
 	}
 
 	/************************************************************
@@ -219,7 +228,7 @@ public class Lyric {
 	 * 
 	 * @author ljnk975
 	 */
-	public void setMark(String mark) {
+	public void setMark(WordInfo mark) {
 		this.mark = mark;
 	}
 

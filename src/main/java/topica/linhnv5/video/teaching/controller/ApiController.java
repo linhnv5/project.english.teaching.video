@@ -14,9 +14,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.google.common.net.HttpHeaders;
@@ -54,7 +55,7 @@ public class ApiController {
 	@Value("${video.teaching.infolder}")
 	private String inFolder;
 
-	@RequestMapping(method = RequestMethod.POST)
+	@PostMapping(path = "/create")
 	public ResponseEntity<ApiResponse> addSubForVideo(@ModelAttribute ApiRequest request) {
 		// The response
 		ApiResponse response = null;
@@ -66,7 +67,7 @@ public class ApiController {
 			// Check request
 			if (request.getVideo() != null) {
 				// Move input video to input folder
-				File inFile = new File(inFolder + request.getVideo().getOriginalFilename());
+				File inFile = new File(inFolder + request.getVideo().getOriginalFilename().replaceAll("\'", "").replaceAll(" ", "_"));
 
 				request.getVideo().transferTo(inFile);
 
@@ -141,8 +142,8 @@ public class ApiController {
 
 		return new ResponseEntity<ApiResponse>(response, HttpStatus.OK);
 	}
-	
-	@RequestMapping(path = "/task")
+
+	@GetMapping(path = "/task")
 	public ResponseEntity<TaskInfoResult> getTaskInfo(@RequestParam int id) throws InterruptedException, ExecutionException {
 		Task<SubVideoTaskResult> task = taskService.getTaskById(id, SubVideoTaskResult.class);
 
@@ -183,7 +184,7 @@ public class ApiController {
 		}
 	}
 
-	@RequestMapping(path = "/result")
+	@GetMapping(path = "/result")
 	public ResponseEntity<?> getTaskResult(@RequestParam int id) throws InterruptedException, ExecutionException, FileNotFoundException {
 		Task<SubVideoTaskResult> task = taskService.getTaskById(id, SubVideoTaskResult.class);
 

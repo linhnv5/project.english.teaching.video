@@ -21,7 +21,7 @@ public class AsyncConfig {
 		executor.setCorePoolSize(7);
 		executor.setMaxPoolSize(42);
 		executor.setQueueCapacity(11);
-		executor.setThreadNamePrefix("threadPoolExecutor-");
+		executor.setThreadNamePrefix("videoCreatorExecutor-");
 		executor.initialize();
 		return executor;
 	}

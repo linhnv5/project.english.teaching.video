@@ -1,4 +1,4 @@
-package topica.linhnv5.video.teaching.zing.service;
+package topica.linhnv5.video.teaching.zing;
 
 /**
  * Exception occur when do zingmp3 api
