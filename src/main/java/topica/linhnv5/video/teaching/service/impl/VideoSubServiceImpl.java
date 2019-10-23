@@ -22,7 +22,7 @@ public class VideoSubServiceImpl implements VideoSubService {
 	private VideoSubExecute execute;
 
 	@Override
-	public Task<SubVideoTaskResult> addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName) {
+	public Task<SubVideoTaskResult> addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName) throws VideoSubException {
 		// Create task
 		Task<SubVideoTaskResult> task = new Task<SubVideoTaskResult>();
 
@@ -40,7 +40,7 @@ public class VideoSubServiceImpl implements VideoSubService {
 	}
 
 	@Override
-	public Task<SubVideoTaskResult> createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputSubFileName) {
+	public Task<SubVideoTaskResult> createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputSubFileName) throws VideoSubException {
 		// Create task
 		Task<SubVideoTaskResult> task = new Task<SubVideoTaskResult>();
 

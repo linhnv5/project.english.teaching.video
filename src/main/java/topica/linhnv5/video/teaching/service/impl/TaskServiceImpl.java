@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import topica.linhnv5.video.teaching.model.Task;
+import topica.linhnv5.video.teaching.model.Task.Status;
 import topica.linhnv5.video.teaching.service.TaskService;
+import topica.linhnv5.video.teaching.service.VideoSubException;
 
 @Service
 public class TaskServiceImpl implements TaskService {
@@ -25,7 +27,6 @@ public class TaskServiceImpl implements TaskService {
 	@Override
 	public synchronized <T> Task<T> getTaskById(String id, Class<T> aClass) {
 		for (Task<?> task : listOfTask) {
-			System.out.println("ASD "+task.getId()+" "+id+" eq="+task.getId().equals(id));
 			if (task.getId().equals(id))
 				return (Task<T>) task;
 		}
@@ -40,13 +41,27 @@ public class TaskServiceImpl implements TaskService {
 		return false;
 	}
 
+	/**
+	 * This function use when task list reach limit
+	 * @return true if success
+	 */
+	private boolean freeTaskList() {
+		for (int i = 0; i < this.listOfTask.size(); i++) {
+			if (listOfTask.get(i).getStatus() == Status.FINISHED) {
+				listOfTask.remove(i);
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
-	public synchronized void addTask(Task<?> task) {
+	public synchronized void addTask(Task<?> task) throws VideoSubException {
 		do {
 			task.setId(UUID.randomUUID().toString());
 		} while (isContainTask(task.getId()));
-		if (this.listOfTask.size() > taskMax)
-			listOfTask.remove(0);
+		if (this.listOfTask.size() > taskMax && !freeTaskList())
+			throw new VideoSubException("Can't create new task, running task reach limit!");
 		listOfTask.add(task);
 	}
 

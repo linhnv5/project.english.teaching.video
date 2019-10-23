@@ -2,6 +2,14 @@ package topica.linhnv5.video.teaching.lyric;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
+import com.google.cloud.translate.Translate;
+import com.google.cloud.translate.Translation;
+import com.google.cloud.translate.Translate.TranslateOption;
+
+import topica.linhnv5.video.teaching.model.WordInfo;
+import topica.linhnv5.video.teaching.service.DictionaryService;
 
 /**
  * SongLyric: Class that hold an entire song lyric with its timestamp.
@@ -14,6 +22,9 @@ public class SongLyric {
 	// Private Class Fields
 	private List<Lyric> song;
 
+	// List of mark text
+	private List<WordInfo> mark;
+
 	/************************************************************
 	 * Default Constructor: Creates the object with default SongLyric state
 	 * 
@@ -24,6 +35,7 @@ public class SongLyric {
 	 ************************************************************/
 	public SongLyric() {
 		this.song = new ArrayList<Lyric>();
+		this.mark = new ArrayList<WordInfo>();
 	}
 
 	/************************************************************
@@ -185,6 +197,54 @@ public class SongLyric {
 		// Change the timestamp to mach the speed
 		for (i = 0; i < this.song.size(); i++)
 			(this.song.get(i)).setFromTimestamp(((this.song.get(i)).getFromTimestamp() / inPlaybackSpeed));
+	}
+
+	/**
+	 * @return the mark
+	 */
+	public List<WordInfo> getMark() {
+		return mark;
+	}
+
+	/**
+	 * @param mark the mark to set
+	 */
+	public void setMark(List<WordInfo> mark) {
+		this.mark = mark;
+	}
+
+	/**
+	 * Mark text randomly in song lyric
+	 * @param dictionary dictonary service
+	 * @param textTime   minimun time of text show
+	 */
+	public void markRandomText(DictionaryService dictionary, int textTime) {
+		int nText = 0; Lyric before = null;
+
+		for (Lyric l : this.song) {
+			if (before != null && l.getFromTimestamp()-before.getToTimestamp() < textTime)
+				continue;
+			if (ThreadLocalRandom.current().nextInt(100) < 40) {
+				if (l.markSomeText(dictionary) != null) {
+					nText++; before = l; mark.add(l.getMark());
+				}
+			}
+		}
+
+		System.out.println("NText: "+nText);
+	}
+
+	/**
+	 * Translate the lyric
+	 * @param translate
+	 */
+	public void translate(Translate translate) {
+		for (Lyric l : this.song) {
+			Translation translation = translate.translate(l.getSourceLyric(),
+					TranslateOption.sourceLanguage("en"),
+					TranslateOption.targetLanguage("vi"));
+			l.setLyricTrans(translation.getTranslatedText());
+		}
 	}
 
 }

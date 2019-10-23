@@ -1,4 +1,4 @@
-package topica.linhnv5.video.teaching.dictionary.model;
+package topica.linhnv5.video.teaching.model;
 
 import java.util.ArrayList;
 import java.util.List;

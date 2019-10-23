@@ -1,18 +1,19 @@
-package topica.linhnv5.video.teaching.dictionary;
+package topica.linhnv5.video.teaching.service.impl;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
-import topica.linhnv5.video.teaching.dictionary.model.WordInfo;
+import topica.linhnv5.video.teaching.model.WordInfo;
+import topica.linhnv5.video.teaching.service.DictionaryService;
 
 /**
  * Dictionary service, use to get word information
  * @author ljnk975
  */
 @Service
-public class Dictionary {
+public class Dictionary implements DictionaryService {
 
 	/**
 	 * Search word infomation from dictionary

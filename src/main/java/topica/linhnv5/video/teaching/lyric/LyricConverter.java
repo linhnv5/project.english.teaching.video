@@ -12,7 +12,7 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;
 
-import topica.linhnv5.video.teaching.dictionary.model.WordInfo;
+import topica.linhnv5.video.teaching.model.WordInfo;
 
 /**
  * Converter class, using to convert lyric from lrc to srt format
@@ -113,6 +113,18 @@ public class LyricConverter {
 		}
 	}
 
+	/********************************************************************
+	 * Read the .csv file
+	 * 
+	 * @param inSong     The object of SongLyric that will hold entire lyric from
+	 *                   the file
+	 * @param inFilename The filename that it reads from
+	 * 
+	 * @return Modify the state of the SongLyric object
+	 * 
+	 * @author IntelleBitnify
+	 * @version 1.0 (10/6/2019)
+	 *********************************************************************/
 	public static SongLyric readCSV(String inLyric) {
 		// Define data structure
 		SongLyric inSongLyric = new SongLyric();
@@ -133,6 +145,7 @@ public class LyricConverter {
 				lrc.setFromTimestamp(csv.getStart());
 				lrc.setToTimestamp(csv.getEnd());
 				lrc.setLyric(csv.getLyric() == null ? "" : csv.getLyric());
+				lrc.setLyricTrans(csv.getLyricTrans() == null ? "" : csv.getLyricTrans());
 
 				if (csv.getMark() != null && !csv.getMark().equals("")) {
 					WordInfo wordInfo = new WordInfo(csv.getMark());
@@ -140,6 +153,7 @@ public class LyricConverter {
 					wordInfo.setType(csv.getType());
 					wordInfo.setPronoun(csv.getApi());
 					wordInfo.setTrans(csv.getTrans());
+					inSongLyric.getMark().add(wordInfo);
 					lrc.setMark(wordInfo);
 				}
 
@@ -226,6 +240,18 @@ public class LyricConverter {
 		return buff.toString();
 	}
 
+	/********************************************************************
+	 * Write the file to the format of .csv file
+	 * 
+	 * @param inSong     The object of SongLyric that hold entire lyric
+	 * @param inFilename The filename that it will write to
+	 * 
+	 * @return Output to the .csv file
+	 * 
+	 * @author IntelleBitnify
+	 * @version 1.0 (10/6/2019)
+	 * @throws Exception 
+	 *********************************************************************/
 	public static String writeCSV(SongLyric inSongLyric) {
 		StringWriter writer = new StringWriter();
 
@@ -238,7 +264,8 @@ public class LyricConverter {
 				LyricCSV csv = new LyricCSV();
 				csv.setStart(lrc.getFromTimestamp());
 				csv.setEnd(lrc.getToTimestamp());
-				csv.setLyric(lrc.getLyricWithoutMark());
+				csv.setLyric(lrc.getSourceLyric());
+				csv.setLyricTrans(lrc.getLyricTrans());
 				if (lrc.getMark() != null) {
 					csv.setMark(lrc.getMark().getInfi());
 					csv.setMarkInfi(lrc.getMark().getWord());

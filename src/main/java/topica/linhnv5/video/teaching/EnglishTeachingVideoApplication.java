@@ -8,6 +8,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+import com.google.cloud.translate.Translate;
+import com.google.cloud.translate.TranslateOptions;
+
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.RunProcessFunction;
@@ -23,6 +26,9 @@ public class EnglishTeachingVideoApplication {
 
 	@Value("${video.teaching.workingfolder}")
 	private String workingDir;
+
+	@Value("${google.translate.apikey}")
+	private String gooleAPIKey;
 
 	@Bean
 	public RunProcessFunction getRunProcessFunction() {
@@ -42,6 +48,12 @@ public class EnglishTeachingVideoApplication {
 	@Bean
 	public FFprobe getFFprobe() throws IOException {
 		return new FFprobe(ffprobePath, runProcessFunction);
+	}
+
+	@SuppressWarnings("deprecation")
+	@Bean
+	public Translate getTranslate() {
+		return TranslateOptions.newBuilder().setApiKey(gooleAPIKey).build().getService();
 	}
 
 	public static void main(String[] args) {

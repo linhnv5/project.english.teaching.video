@@ -19,6 +19,6 @@ public interface TaskService {
 	 * Add a task
 	 * @param task the task
 	 */
-	public void addTask(Task<?> task);
+	public void addTask(Task<?> task) throws VideoSubException;
 
 }

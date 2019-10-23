@@ -4,8 +4,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.util.StringUtils;
 
-import topica.linhnv5.video.teaching.dictionary.Dictionary;
-import topica.linhnv5.video.teaching.dictionary.model.WordInfo;
+import topica.linhnv5.video.teaching.model.WordInfo;
+import topica.linhnv5.video.teaching.service.DictionaryService;
 
 /**
  * Lyric: Contain timestamp and lyric text.
@@ -19,6 +19,8 @@ public class Lyric {
 	private double to;
 
 	private String lyric;
+	private String lyricTrans;
+
 	private WordInfo mark;
 
 	/************************************************************
@@ -82,12 +84,20 @@ public class Lyric {
 	 * @version 1.0 (10/6/2019)
 	 ************************************************************/
 	public String getLyric() {
-		if (this.mark != null)
-			return this.lyric.replaceAll(this.mark.getInfi(), "<b><font color=\"yellow\">"+this.mark.getInfi()+"</font></b>");
-		return this.lyric;
+		StringBuilder buff = new StringBuilder();
+		buff.append(this.mark != null ? 
+				this.lyric.replaceAll(this.mark.getInfi(), "<b><font color=\"yellow\">"+this.mark.getInfi()+"</font></b>")
+				: this.lyric);
+		if (this.lyricTrans != null)
+			buff.append("\n").append(this.lyricTrans);
+		return buff.toString();
 	}
 
-	public String getLyricWithoutMark() {
+	/**
+	 * Get the source lyric without trans and mark
+	 * @return the source lyric
+	 */
+	public String getSourceLyric() {
 		return this.lyric;
 	}
 
@@ -237,7 +247,7 @@ public class Lyric {
 		this.to = toTimestamp;
 	}
 
-	public String markSomeText(Dictionary dictionary) {
+	public WordInfo markSomeText(DictionaryService dictionary) {
 		if (lyric.equals("") || StringUtils.startsWithIgnoreCase(lyric, "Bài hát") || StringUtils.startsWithIgnoreCase(lyric, "Ca sĩ"))
 			return null;
 
@@ -255,9 +265,21 @@ public class Lyric {
 			next = ThreadLocalRandom.current().nextInt(aLyric.length);
 		} while(aLyric[next].contains("'") || (wordInfo = dictionary.searchWord(aLyric[next])) == null);
 
-		this.mark = wordInfo;
+		return this.mark = wordInfo;
+	}
 
-		return this.mark.getWord();
+	/**
+	 * @return the lyricTrans
+	 */
+	public String getLyricTrans() {
+		return lyricTrans;
+	}
+
+	/**
+	 * @param lyricTrans the lyricTrans to set
+	 */
+	public void setLyricTrans(String lyricTrans) {
+		this.lyricTrans = lyricTrans;
 	}
 
 }

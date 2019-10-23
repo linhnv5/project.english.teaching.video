@@ -5,7 +5,6 @@ import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +18,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
+import com.google.cloud.translate.Translate;
+
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFmpegExecutor;
 import net.bramp.ffmpeg.FFmpegUtils;
@@ -29,13 +30,13 @@ import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.probe.FFmpegStream;
 import net.bramp.ffmpeg.progress.Progress;
 import net.bramp.ffmpeg.progress.ProgressListener;
-import topica.linhnv5.video.teaching.dictionary.Dictionary;
-import topica.linhnv5.video.teaching.dictionary.model.WordInfo;
 import topica.linhnv5.video.teaching.lyric.Lyric;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
 import topica.linhnv5.video.teaching.model.SubVideoTaskResult;
 import topica.linhnv5.video.teaching.model.Task;
+import topica.linhnv5.video.teaching.model.WordInfo;
+import topica.linhnv5.video.teaching.service.DictionaryService;
 import topica.linhnv5.video.teaching.zing.ZingMp3;
 import topica.linhnv5.video.teaching.zing.model.SearchItem;
 import topica.linhnv5.video.teaching.zing.model.StreamResult;
@@ -65,7 +66,7 @@ public class VideoSubExecute {
 	private FFmpeg ffmpeg;
 
 	@Autowired
-	private Dictionary dictionary;
+	private DictionaryService dictionary;
 
 	@Value("${video.teaching.text.time}")
 	private int textTime;
@@ -507,6 +508,9 @@ public class VideoSubExecute {
 		return zingMp3.getMatchingTrack(track, artist);
 	}
 
+	@Autowired
+	private Translate translate;
+
 	public SongLyric doGetSubtitle(SearchItem item) throws Exception {
 		// If not found or not have lyric
 		if (item == null || item.getLyric() == "")
@@ -528,22 +532,17 @@ public class VideoSubExecute {
 		try {
 			songLyric = LyricConverter.readLRC(ZingMp3.sendRequest(item.getLyric()));
 
-			// Mark some text
-			List<Lyric> listOfLyric = songLyric.getSong();
+			// 
+			System.out.println("Translate Lyric");
 
-			int nText = 0; Lyric before = null;
+			// Translate
+			songLyric.translate(translate);
 
-			for (Lyric l : listOfLyric) {
-				if (before != null && l.getFromTimestamp()-before.getToTimestamp() < textTime)
-					continue;
-				if (ThreadLocalRandom.current().nextInt(100) < 40) {
-					if (l.markSomeText(dictionary) != null) {
-						nText++; before = l;
-					}
-				}
-			}
+			// 
+			System.out.println("Mark lyric");
 
-			System.out.println("NText: "+nText);
+			// Mark random
+			songLyric.markRandomText(dictionary, textTime);
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw new Exception("An error occur when get the lyric!");
