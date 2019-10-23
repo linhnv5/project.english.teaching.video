@@ -13,7 +13,7 @@ public interface TaskService {
 	 * @param id id of task
 	 * @return   The task
 	 */
-	public <T> Task<T> getTaskById(int id, Class<T> aClass);
+	public <T> Task<T> getTaskById(String id, Class<T> aClass);
 
 	/**
 	 * Add a task

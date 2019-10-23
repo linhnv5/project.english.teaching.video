@@ -24,6 +24,7 @@
 		<javacpp.ffmpeg.version>3.2.1-1.3</javacpp.ffmpeg.version>
 		<jsoup.version>1.8.3</jsoup.version>
 		<swagger.version>2.9.2</swagger.version>
+		<open.csv.version>4.0</open.csv.version>
 	</properties>
 
 	<dependencies>
@@ -93,6 +94,13 @@
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger-ui</artifactId>
 			<version>${swagger.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>${open.csv.version}</version>
 		</dependency>
 	</dependencies>
 

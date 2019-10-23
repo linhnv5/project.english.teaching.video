@@ -2,10 +2,16 @@ package topica.linhnv5.video.teaching.service.impl;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import javax.servlet.ServletContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,13 +36,15 @@ import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
 import topica.linhnv5.video.teaching.model.SubVideoTaskResult;
 import topica.linhnv5.video.teaching.model.Task;
-import topica.linhnv5.video.teaching.service.VideoSubException;
 import topica.linhnv5.video.teaching.zing.ZingMp3;
 import topica.linhnv5.video.teaching.zing.model.SearchItem;
 import topica.linhnv5.video.teaching.zing.model.StreamResult;
 
 @Component
 public class VideoSubExecute {
+
+	@Autowired
+	private ServletContext servletContext;
 
 	@Autowired
 	private ZingMp3 zingMp3;
@@ -59,97 +67,108 @@ public class VideoSubExecute {
 	@Autowired
 	private Dictionary dictionary;
 
-	private String drawBox(double from, double to, int x, int y, int w, int h, String color, float opacity) {
+	@Value("${video.teaching.text.time}")
+	private int textTime;
+
+	private String drawBox(double from, double to, int x, int y, int w, int h, String color, float opacity, int t) {
 		return new StringBuilder(",drawbox=").append(x).append(":").append(y).append(":").append(w).append(":").append(h)
 				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
-				.append(":color=").append(color).append("@").append(opacity).append(":t=fill")
+				.append(":color=").append(color).append("@").append(opacity)
+				.append(":t=").append(t < 0 ? "fill" : t)
 				.toString();
 	}
 
 	private String drawText(String text, double from, double to, int x, int y, String color, long size) {
-		return new StringBuilder(",drawtext=text='").append(text.replaceAll("\'", "\'\'").replaceAll("\"", "\"\"")).append("'")
+		StringBuilder buff = new StringBuilder(",drawtext=text='").append(text.replaceAll("\'", "\'\'").replaceAll("\"", "\"\"")).append("'")
 				.append(":x=").append(x).append(":y=").append(y)
 				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
 				.append(":fontfile='").append(fontFile).append("'")
 				.append(":fontcolor=").append(color)
-				.append(":fontsize=").append(size)
-				.toString();
+				.append(":fontsize=").append(size);
+		return buff.toString();
 	}
 
 	private String drawWordInfo(WordInfo info, double from, double to, int x, int y) {
-		String wordColor = "yellow", boxColor = "black"; float boxCapacity = 0.75F;
-		int w = info.getWordWithType().length()*15, h = 0;
+		// Color
+		String wordColor = "yellow", boxColor = "black";
 
-		StringBuilder buff = new StringBuilder(drawText(info.getWordWithType(), from, to, x+5, y+5, wordColor, 25)); h += 30;
+		// Capacity and maxw
+		float boxCapacity = 0.5F; int maxw = 20;
+
+		// text font size
+		int textSize = 15, textW = 10;
+
+		// x, y draw Text
+		int xt = 20, yt = 20;
+
+		// W, H of box
+		int w = info.getWord().length()*15, h = 0;
+
+		if (to - from < textTime)
+			to = from + textTime;
+
+		StringBuilder buff = new StringBuilder(drawText(info.getWord(), from, to, x+xt, y+yt, wordColor, textSize*2)); h += textSize + 5;
+
+		if (info.getType() != null && !info.getType().equals("")) {
+			buff.append(drawBox(from, to, x+xt, y+yt+h+5, info.getType().length() * textW, textSize, wordColor, 1.0F, 2));
+			buff.append(drawText(info.getType(), from, to, x+xt+5, y+yt+h+7, wordColor, textSize));
+			h += textSize + 10;
+			if (info.getType().length()*textW > w)
+				w = info.getType().length()*textW;
+		}
 
 		if (info.getPronoun() != null && !info.getPronoun().equals("")) {
-			buff.append(drawText(info.getPronoun(), from, to, x+5, y+5+h, wordColor, 20));
-			h += 20;
-			if (info.getPronoun().length() * 10 > w)
-				w = info.getPronoun().length()*10;
+			buff.append(drawText(info.getPronoun(), from, to, x+xt, y+yt+h, wordColor, textSize));
+			h += textSize;
+			if (info.getPronoun().length()*textW > w)
+				w = info.getPronoun().length()*textW;
 		}
 
 		if (info.getTrans() != null && !info.getTrans().equals("")) {
-			buff.append(drawText(info.getTrans(),   from, to, x+5, y+5+h, wordColor, 20));
-			h += 20;
-			if (info.getTrans().length() * 10 > w)
-				w = info.getTrans().length()*10;
+			String[] trans = info.getTrans(maxw);
+
+			for (String tran : trans) {
+				buff.append(drawText(tran, from, to, x+xt, y+yt+h, wordColor, textSize));
+				h += textSize;
+				if (info.getTrans().length()*textW > w)
+					w = info.getTrans().length()*textW;
+			}
 		}
 
-		return new StringBuilder(drawBox(from, to, x, y, w+10, h+10, boxColor, boxCapacity))
+		return new StringBuilder(drawBox(from, to, x, y, w+xt*2, h+yt*2, boxColor, boxCapacity, -1))
 				.append(buff.toString())
 				.toString();
 	}
 
 	@Async("threadPoolExecutor")
-	public Future<SubVideoTaskResult> doAddSubToVideo(String inputFileName, String track, String artist, Task<SubVideoTaskResult> task) {
+	public Future<SubVideoTaskResult> doAddSubToVideo(String track, String artist, String inputFileName, String inputSubName, Task<SubVideoTaskResult> task) {
 		SubVideoTaskResult result = new SubVideoTaskResult();
 
 		// Input and output file
 		File input  = new File(inFolder  + inputFileName);
 		File output = new File(outFolder + inputFileName);
 
+		File sub    = null;
+
 		try {
-			//
-			System.out.println("Search MP3");
+			// Get the lyric
+			SongLyric songLyric = null;
 
-			// Search item
-			SearchItem item = zingMp3.getMatchingTrack(track, artist);
+			// If sub file specific
+			if (inputSubName != null) {
+				sub = new File(inFolder + inputSubName);
 
-			// If not found or not have lyric
-			if (item == null || item.getLyric() == "")
-				throw new Exception("Music not found");
+				songLyric = LyricConverter.readCSV(Files.lines(Paths.get(sub.getPath()), StandardCharsets.UTF_8).collect(Collectors.joining("\n")));
+			} else {
+				//
+				System.out.println("Search MP3");
 
-			// Print the lyric url
-			System.out.println("Lyric: "+item.getLyric());
+				// Search item
+				SearchItem item = zingMp3.getMatchingTrack(track, artist);
 
-			// Check lyric
-			if (item.getLyric() == null)
-				throw new Exception("Could not find the lyric!");
-
-			// Get the lyric, format lrc
-			SongLyric songLyric;
-
-			try {
-				songLyric = LyricConverter.readLRC(ZingMp3.sendRequest(item.getLyric()));
-			} catch(Exception e) {
-				e.printStackTrace();
-				throw new Exception("An error occur when get the lyric!");
+				// Get the lyric
+				songLyric = doGetSubtitle(item);
 			}
-
-			// Mark some text
-			List<Lyric> listOfLyric = songLyric.getSong();
-
-			int nText = 0;
-
-			for (Lyric l : listOfLyric) {
-				if (r.nextInt(100) < 40) {
-					if (l.markSomeText(dictionary) != null)
-						nText++;
-				}
-			}
-
-			System.out.println("NText: "+nText);
 
 			// Convert it to srt
 			String lyric = LyricConverter.writeSRT(songLyric);
@@ -157,7 +176,7 @@ public class VideoSubExecute {
 			// Write subtitle to file
 			FileOutputStream fos = null;
 			try {
-				fos = new FileOutputStream(new File(input.getPath()+".srt"));
+				fos = new FileOutputStream(sub = new File(input.getPath()+".srt"));
 				fos.write(lyric.getBytes("UTF-8"));
 			} catch(Exception e) {
 				e.printStackTrace();
@@ -188,9 +207,9 @@ public class VideoSubExecute {
 
 				// Make filter
 				StringBuilder vfilter = new StringBuilder("scale=640:-1[inscale];")
-										.append("[inscale]subtitles=\'input/"+input.getName()+".srt\'");
+										.append("[inscale]subtitles=\'input/"+sub.getName()+"\'");
 
-				for (Lyric l : listOfLyric) {
+				for (Lyric l : songLyric.getSong()) {
 					if (l.getMark() != null)
 						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width/10, height/2-40));
 				}
@@ -264,20 +283,23 @@ public class VideoSubExecute {
 		return new AsyncResult<SubVideoTaskResult>(result);
 	}
 
-	public static Random r = new Random();
-
 	@Async("threadPoolExecutor")
-	public Future<SubVideoTaskResult> doCreateSubVideoFromMusic(String track, String artist, Task<SubVideoTaskResult> task) throws VideoSubException {
+	public Future<SubVideoTaskResult> doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputSubName, Task<SubVideoTaskResult> task) {
 		SubVideoTaskResult result = new SubVideoTaskResult();
 
-		String inputFileName = track.replaceAll(" ", "_")+"("+artist.replaceAll(" ", "_")+").mp4";
+		String inputFileName = track.replaceAll(" ", "_")+"("+artist.replaceAll(" ", "_")+")";
 
 		// Input and output file
-		File input  = new File(inFolder  + inputFileName);
-		File output = new File(outFolder + inputFileName);
+		File input  = new File(inFolder  + inputFileName + ".mp3");
+		File output = new File(outFolder + inputFileName + ".mp4");
+
+		// Sub file
+		File sub    = null;
 
 		// Back image
-		File back   = new File(inFolder  + "image" + File.separator + "back" + r.nextInt(5) + ".jpg");
+		File back   = new File(inFolder  + (inputBackName != null ? inputBackName : "image" + File.separator + "back" + ThreadLocalRandom.current().nextInt(5) + ".jpg"));
+
+		boolean mp4 = !servletContext.getMimeType(back.getName()).startsWith("image");
 
 		try {
 			//
@@ -286,43 +308,18 @@ public class VideoSubExecute {
 			// Search item
 			SearchItem item = zingMp3.getMatchingTrack(track, artist);
 
-			// If not found or not have lyric
-			if (item == null || item.getLyric() == "")
-				throw new Exception("Music not found");
+			// Get the lyric
+			SongLyric songLyric = null;
 
-			// The ID
-			String id = item.getId();
+			// If sub file specific
+			if (inputSubName != null) {
+				sub = new File(inFolder + inputSubName);
 
-			// Print the lyric url
-			System.out.println("Id: "+id+" lyric: "+item.getLyric());
-
-			// Check lyric
-			if (item.getLyric() == null)
-				throw new Exception("Could not find the lyric!");
-
-			// Get the lyric, format lrc
-			SongLyric songLyric;
-
-			try {
-				songLyric = LyricConverter.readLRC(ZingMp3.sendRequest(item.getLyric()));
-			} catch(Exception e) {
-				e.printStackTrace();
-				throw new Exception("An error occur when get the lyric!");
+				songLyric = LyricConverter.readCSV(Files.lines(Paths.get(sub.getPath()), StandardCharsets.UTF_8).collect(Collectors.joining("\n")));
+			} else {
+				// Get the lyric
+				songLyric = doGetSubtitle(item);
 			}
-
-			// Mark some text
-			List<Lyric> listOfLyric = songLyric.getSong();
-
-			int nText = 0;
-
-			for (Lyric l : listOfLyric) {
-				if (r.nextInt(100) < 40) {
-					if (l.markSomeText(dictionary) != null)
-						nText++;
-				}
-			}
-
-			System.out.println("NText: "+nText);
 
 			// Convert it to srt
 			String lyric = LyricConverter.writeSRT(songLyric);
@@ -330,7 +327,7 @@ public class VideoSubExecute {
 			// Write subtitle to file
 			FileOutputStream fos = null;
 			try {
-				fos = new FileOutputStream(new File(input.getPath()+".srt"));
+				fos = new FileOutputStream(sub = new File(input.getPath()+".srt"));
 				fos.write(lyric.getBytes("UTF-8"));
 			} catch(Exception e) {
 				e.printStackTrace();
@@ -349,7 +346,7 @@ public class VideoSubExecute {
 
 			try {
 				// Get link stream
-				StreamResult streamResult = zingMp3.getStream(id);
+				StreamResult streamResult = zingMp3.getStream(item.getId());
 
 				String link128 = streamResult.getData().getData().getLink128();
 				String link320 = streamResult.getData().getData().getLink320();
@@ -390,39 +387,52 @@ public class VideoSubExecute {
 				//
 				System.out.println("Do FFprobe");
 
-				// Do ffprobe
+				// Do ffprobe for music
 				FFmpegProbeResult probeResult  = ffprobe.probe(input.getPath());
+				FFmpegStream stream = probeResult.getStreams().get(0);
 
+				// Do ffprobe for back
 				FFmpegProbeResult probeResult2 = ffprobe.probe(back.getPath());
-				FFmpegStream stream = probeResult2.getStreams().get(0);
+				FFmpegStream stream2 = probeResult2.getStreams().get(0);
 
 				//
 				System.out.println("Do FFmpeg");
 
 				int width  = 640;
-				int height = stream.height*640/stream.width;
+				int height = stream2.height*640/stream2.width;
 
 				// Make filter
-				StringBuilder vfilter = new StringBuilder("[0:v]scale=640:-2[in];")
-											.append("[in]subtitles='input/"+input.getName()+".srt'")
-											;
+				StringBuilder vfilter = new StringBuilder("[0:v]scale=640:-2");
 
-				for (Lyric l : listOfLyric) {
+				if (mp4)
+					vfilter.append(",loop=-1:start=0:size=").append(stream2.nb_frames);
+
+				vfilter.append("[in];").append("[in]subtitles='input/"+sub.getName()+"'");
+
+				for (Lyric l : songLyric.getSong()) {
 					if (l.getMark() != null)
 						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width/10, height/2-40));
 				}
 
-				vfilter.append("[bg];")
-						.append("movie=input/image/topica.png,scale=125:-1[watermark];")
-						.append("[bg][watermark]overlay=10:10")
-						;
+				vfilter
+					.append("[bg];")
+					.append("movie=input/image/topica.png,scale=125:-1[watermark];")
+					.append("[bg][watermark]overlay=10:10")
+					;
 
 				// Do ffmpeg
 				FFmpegBuilder builder = ffmpeg.builder()
 					.addInput(back.getPath())
 					.addInput(input.getPath())
-					.addExtraArgs("-loop", "1")
 					.setComplexFilter(vfilter.toString())
+					;
+
+				if (!mp4)
+					builder
+					.addExtraArgs("-loop", "1")
+					;
+				
+				builder
 					.overrideOutputFiles(true)
 					.addOutput(output.getPath())
 					.setFormat("mp4")
@@ -435,7 +445,7 @@ public class VideoSubExecute {
 					.addExtraArgs("-map", "0:v")
 					.addExtraArgs("-map", "1:a")
 					.addExtraArgs("-map_metadata", "1")
-					.addExtraArgs("-shortest")
+					.addExtraArgs("-frames:v", String.valueOf((int)Math.floor(stream.duration*30)))
 					.done();
 
 				// create ffmpeg executor
@@ -449,21 +459,23 @@ public class VideoSubExecute {
 
 					@Override
 					public void progress(Progress progress) {
-						double percentage = progress.out_time_ns / duration_ns;
+						byte percentage = (byte) (progress.out_time_ns * 100 / duration_ns);
 
 						// Set task progress
-						task.setProgress((byte)(percentage * 100));
+						if (task.getProgress() < percentage) {
+							task.setProgress(percentage);
 
-						// Print out interesting information about the progress
-						System.out.println(String.format(
-							"[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
-							percentage * 100,
-							progress.status,
-							progress.frame,
-							FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
-							progress.fps.doubleValue(),
-							progress.speed
-						));
+							// Print out interesting information about the progress
+							System.out.println(String.format(
+								"[%d%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
+								percentage,
+								progress.status,
+								progress.frame,
+								FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
+								progress.fps.doubleValue(),
+								progress.speed
+							));
+						}
 					}
 				});
 				
@@ -482,13 +494,62 @@ public class VideoSubExecute {
 			task.setProgress((byte)100);
 
 			// Set the output file
-			result.setOutput(new File(outFolder+id+".mp4"));
+			result.setOutput(output);
 		} catch(Exception e) {
 			task.setStatus(Task.Status.FINISHED);
 			result.setException(e);
 		}
 
 		return new AsyncResult<SubVideoTaskResult>(result);
+	}
+
+	public SearchItem doGetMatchingTrack(String track, String artist) throws Exception {
+		return zingMp3.getMatchingTrack(track, artist);
+	}
+
+	public SongLyric doGetSubtitle(SearchItem item) throws Exception {
+		// If not found or not have lyric
+		if (item == null || item.getLyric() == "")
+			throw new Exception("Music not found");
+
+		// The ID
+		String id = item.getId();
+
+		// Print the lyric url
+		System.out.println("Id: "+id+" lyric: "+item.getLyric());
+
+		// Check lyric
+		if (item.getLyric() == null)
+			throw new Exception("Could not find the lyric!");
+
+		// Get the lyric, format lrc
+		SongLyric songLyric;
+
+		try {
+			songLyric = LyricConverter.readLRC(ZingMp3.sendRequest(item.getLyric()));
+
+			// Mark some text
+			List<Lyric> listOfLyric = songLyric.getSong();
+
+			int nText = 0; Lyric before = null;
+
+			for (Lyric l : listOfLyric) {
+				if (before != null && l.getFromTimestamp()-before.getToTimestamp() < textTime)
+					continue;
+				if (ThreadLocalRandom.current().nextInt(100) < 40) {
+					if (l.markSomeText(dictionary) != null) {
+						nText++; before = l;
+					}
+				}
+			}
+
+			System.out.println("NText: "+nText);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw new Exception("An error occur when get the lyric!");
+		}
+
+		return songLyric;
 	}
 
 }

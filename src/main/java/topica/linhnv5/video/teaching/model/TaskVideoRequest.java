@@ -8,7 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
  * 
  * @author ljnk975
  */
-public class ApiRequest {
+public class TaskVideoRequest {
 
 	/**
 	 * Name of music video
@@ -26,9 +26,9 @@ public class ApiRequest {
 	private MultipartFile video;
 
 	/**
-	 * If video is not specify, api will download music file and add background to video
+	 * Sub file
 	 */
-	private MultipartFile background;
+	private MultipartFile sub;
 
 	/**
 	 * @return the title
@@ -73,17 +73,17 @@ public class ApiRequest {
 	}
 
 	/**
-	 * @return the background
+	 * @return the sub
 	 */
-	public MultipartFile getBackground() {
-		return background;
+	public MultipartFile getSub() {
+		return sub;
 	}
 
 	/**
-	 * @param background the background to set
+	 * @param sub the sub to set
 	 */
-	public void setBackground(MultipartFile background) {
-		this.background = background;
+	public void setSub(MultipartFile sub) {
+		this.sub = sub;
 	}
 
 }

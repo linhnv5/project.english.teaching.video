@@ -1,30 +1,29 @@
 package topica.linhnv5.video.teaching.model;
 
+import io.swagger.annotations.ApiModelProperty;
+
 /**
  * Header of request, include error code, err message
  * @author ljnk975
  */
-public class ApiResponseHeader {
+public class ResponseHeader {
 
 	/**
 	 * Status of request, SUCCESS if command return OK, ERROR if there are some error occur
 	 */
+	@ApiModelProperty("Status of request, SUCCESS for OK, ERROR othewise")
 	private String status;
-
-	/**
-	 * Request code, 200 for OK
-	 */
-	private int code;
 
 	/**
 	 * Request error message
 	 */
-	private String errMess;
+	@ApiModelProperty("If the status is ERROR, this return infomation about error occur")
+	private String mess;
 
 	/**
 	 * Default constructor
 	 */
-	public ApiResponseHeader() {
+	public ResponseHeader() {
 	}
 
 	/**
@@ -33,10 +32,9 @@ public class ApiResponseHeader {
 	 * @param code
 	 * @param errMess
 	 */
-	public ApiResponseHeader(String status, int code, String errMess) {
+	public ResponseHeader(String status, String errMess) {
 		this.status = status;
-		this.code = code;
-		this.errMess = errMess;
+		this.mess = errMess;
 	}
 
 	/**
@@ -54,31 +52,17 @@ public class ApiResponseHeader {
 	}
 
 	/**
-	 * @return the code
-	 */
-	public int getCode() {
-		return code;
-	}
-
-	/**
-	 * @param code the code to set
-	 */
-	public void setCode(int code) {
-		this.code = code;
-	}
-
-	/**
 	 * @return the errMess
 	 */
-	public String getErrMess() {
-		return errMess;
+	public String getMess() {
+		return mess;
 	}
 
 	/**
-	 * @param errMess the errMess to set
+	 * @param mess the errMess to set
 	 */
-	public void setErrMess(String errMess) {
-		this.errMess = errMess;
+	public void setMess(String mess) {
+		this.mess = mess;
 	}
 
 }

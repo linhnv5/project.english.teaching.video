@@ -7,9 +7,18 @@ import org.springframework.stereotype.Service;
 
 import topica.linhnv5.video.teaching.dictionary.model.WordInfo;
 
+/**
+ * Dictionary service, use to get word information
+ * @author ljnk975
+ */
 @Service
 public class Dictionary {
 
+	/**
+	 * Search word infomation from dictionary
+	 * @param word the word to be search
+	 * @return     the word type(n, v, adj, ...), pronunciation, translate
+	 */
 	public WordInfo searchWord(String word) {
 		System.out.println("Word: "+word);
 
@@ -27,7 +36,7 @@ public class Dictionary {
 			return null;
 		}
 
-		WordInfo wordInfo = new WordInfo();
+		WordInfo wordInfo = new WordInfo(word);
 
 		// Word
 		elements = doc.select(".tw-bw.dhw.dpos-h_hw.di-title");

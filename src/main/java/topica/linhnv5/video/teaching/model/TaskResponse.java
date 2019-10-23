@@ -1,25 +1,29 @@
 package topica.linhnv5.video.teaching.model;
 
+import io.swagger.annotations.ApiModelProperty;
+
 /**
  * Response for subbing video service, include task id, error code, ...
  * @author ljnk975
  */
-public class ApiResponse {
+public class TaskResponse {
 
 	/**
 	 * Header of request, include errcode, status
 	 */
-	private ApiResponseHeader header;
+	@ApiModelProperty("Header of response")
+	private ResponseHeader header;
 
 	/**
 	 * Task id of request, using to check status of request and get the result
 	 */
-	private int task;
+	@ApiModelProperty("The task id")
+	private String task;
 
 	/**
 	 * Deafult constructor
 	 */
-	public ApiResponse() {
+	public TaskResponse() {
 	}
 
 	/**
@@ -29,36 +33,36 @@ public class ApiResponse {
 	 * @param errMss
 	 * @param task
 	 */
-	public ApiResponse(String status, int code, String errMss, int task) {
-		this.header = new ApiResponseHeader(status, code, errMss);
+	public TaskResponse(String status, String errMss, String task) {
+		this.header = new ResponseHeader(status, errMss);
 		this.task = task;
 	}
 
 	/**
 	 * @return the header
 	 */
-	public ApiResponseHeader getHeader() {
+	public ResponseHeader getHeader() {
 		return header;
 	}
 
 	/**
 	 * @param header the header to set
 	 */
-	public void setHeader(ApiResponseHeader header) {
+	public void setHeader(ResponseHeader header) {
 		this.header = header;
 	}
 
 	/**
 	 * @return the task
 	 */
-	public int getTask() {
+	public String getTask() {
 		return task;
 	}
 
 	/**
 	 * @param task the task to set
 	 */
-	public void setTask(int task) {
+	public void setTask(String task) {
 		this.task = task;
 	}
 

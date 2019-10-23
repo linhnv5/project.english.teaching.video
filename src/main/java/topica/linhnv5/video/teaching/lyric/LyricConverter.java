@@ -1,6 +1,18 @@
 package topica.linhnv5.video.teaching.lyric;
 
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.StatefulBeanToCsv;
+import com.opencsv.bean.StatefulBeanToCsvBuilder;
+
+import topica.linhnv5.video.teaching.dictionary.model.WordInfo;
 
 /**
  * Converter class, using to convert lyric from lrc to srt format
@@ -101,6 +113,47 @@ public class LyricConverter {
 		}
 	}
 
+	public static SongLyric readCSV(String inLyric) {
+		// Define data structure
+		SongLyric inSongLyric = new SongLyric();
+
+		try {
+			Reader reader = new StringReader(inLyric);
+
+			CsvToBean<LyricCSV> csvToBean = new CsvToBeanBuilder<LyricCSV>(reader)
+	                .withType(LyricCSV.class)
+	                .withIgnoreLeadingWhiteSpace(true)
+	                .build();
+
+	        Iterator<LyricCSV> csvUserIterator = csvToBean.iterator();
+
+	        while (csvUserIterator.hasNext()) {
+	        	LyricCSV csv = csvUserIterator.next();
+				Lyric lrc = new Lyric();
+				lrc.setFromTimestamp(csv.getStart());
+				lrc.setToTimestamp(csv.getEnd());
+				lrc.setLyric(csv.getLyric() == null ? "" : csv.getLyric());
+
+				if (csv.getMark() != null && !csv.getMark().equals("")) {
+					WordInfo wordInfo = new WordInfo(csv.getMark());
+					wordInfo.setWord(csv.getMarkInfi());
+					wordInfo.setType(csv.getType());
+					wordInfo.setPronoun(csv.getApi());
+					wordInfo.setTrans(csv.getTrans());
+					lrc.setMark(wordInfo);
+				}
+
+				inSongLyric.addLyric(lrc);
+	        }
+	        
+	        System.out.println("Lyric: "+inSongLyric.getSong().size());
+		} catch(Exception e) {
+		}
+
+		return inSongLyric;
+	}
+
+	
 	/********************************************************************
 	 * Write the file to the format of .srt file
 	 * 
@@ -171,6 +224,35 @@ public class LyricConverter {
 		System.out.println(">> INFO: Succesfully convert!");
 
 		return buff.toString();
+	}
+
+	public static String writeCSV(SongLyric inSongLyric) {
+		StringWriter writer = new StringWriter();
+
+		StatefulBeanToCsv<LyricCSV> beanToCsv = new StatefulBeanToCsvBuilder<LyricCSV>(writer)
+                .withQuotechar('\"')
+                .build();
+
+		try {
+			beanToCsv.write(inSongLyric.getSong().stream().map(lrc -> {
+				LyricCSV csv = new LyricCSV();
+				csv.setStart(lrc.getFromTimestamp());
+				csv.setEnd(lrc.getToTimestamp());
+				csv.setLyric(lrc.getLyricWithoutMark());
+				if (lrc.getMark() != null) {
+					csv.setMark(lrc.getMark().getInfi());
+					csv.setMarkInfi(lrc.getMark().getWord());
+					csv.setType(lrc.getMark().getType());
+					csv.setApi(lrc.getMark().getPronoun());
+					csv.setTrans(lrc.getMark().getTrans());
+				}
+				return csv;
+			}).collect(Collectors.toList()));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return writer.getBuffer().toString();
 	}
 
 }

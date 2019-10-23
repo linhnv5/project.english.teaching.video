@@ -1,6 +1,6 @@
 package topica.linhnv5.video.teaching.lyric;
 
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.util.StringUtils;
 
@@ -82,6 +82,12 @@ public class Lyric {
 	 * @version 1.0 (10/6/2019)
 	 ************************************************************/
 	public String getLyric() {
+		if (this.mark != null)
+			return this.lyric.replaceAll(this.mark.getInfi(), "<b><font color=\"yellow\">"+this.mark.getInfi()+"</font></b>");
+		return this.lyric;
+	}
+
+	public String getLyricWithoutMark() {
 		return this.lyric;
 	}
 
@@ -183,33 +189,6 @@ public class Lyric {
 		return lyricString;
 	}
 
-	public static Random r = new Random();
-
-	public String markSomeText(Dictionary dictionary) {
-		if (lyric.equals("") || StringUtils.startsWithIgnoreCase(lyric, "Bài hát") || StringUtils.startsWithIgnoreCase(lyric, "Ca sĩ"))
-			return null;
-
-		String[] aLyric = lyric.split(" ");
-
-		if (aLyric.length == 0)
-			return null;
-
-		int next, i = 0; WordInfo wordInfo;
-
-		do {
-			if (++i >= aLyric.length)
-				return null;
-
-			next = r.nextInt(aLyric.length);
-		} while(aLyric[next].contains("'") || (wordInfo = dictionary.searchWord(aLyric[next])) == null);
-
-		this.mark = wordInfo;
-		aLyric[next] = "<b><font color=\"yellow\">"+aLyric[next]+"</font></b>";
-		this.lyric = String.join(" ", aLyric);
-
-		return this.mark.getWord();
-	}
-
 	/************************************************************
 	 * Sets the lyric based on the imported inLyric
 	 * 
@@ -256,6 +235,29 @@ public class Lyric {
 	 ************************************************************/
 	public void setToTimestamp(double toTimestamp) {
 		this.to = toTimestamp;
+	}
+
+	public String markSomeText(Dictionary dictionary) {
+		if (lyric.equals("") || StringUtils.startsWithIgnoreCase(lyric, "Bài hát") || StringUtils.startsWithIgnoreCase(lyric, "Ca sĩ"))
+			return null;
+
+		String[] aLyric = lyric.split(" ");
+
+		if (aLyric.length == 0)
+			return null;
+
+		int next, i = 0; WordInfo wordInfo;
+
+		do {
+			if (++i >= aLyric.length)
+				return null;
+
+			next = ThreadLocalRandom.current().nextInt(aLyric.length);
+		} while(aLyric[next].contains("'") || (wordInfo = dictionary.searchWord(aLyric[next])) == null);
+
+		this.mark = wordInfo;
+
+		return this.mark.getWord();
 	}
 
 }
