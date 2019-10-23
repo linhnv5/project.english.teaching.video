@@ -21,7 +21,7 @@ public class Dictionary implements DictionaryService {
 	 * @return     the word type(n, v, adj, ...), pronunciation, translate
 	 */
 	public WordInfo searchWord(String word) {
-		System.out.println("Word: "+word);
+		System.out.println("Dic:SearchWord: "+word);
 
 		Document doc;
 		try {
@@ -33,7 +33,7 @@ public class Dictionary implements DictionaryService {
 
 		Elements elements = doc.select(".dpos-h.di-head.normal-entry");
 		if (elements.isEmpty()) {
-			System.out.println("   Not found");
+			System.out.println("   not found");
 			return null;
 		}
 
@@ -43,7 +43,7 @@ public class Dictionary implements DictionaryService {
 		elements = doc.select(".tw-bw.dhw.dpos-h_hw.di-title");
 
 		if (elements.size() == 0) {
-			System.out.println("   Word not found in doc!");
+			System.out.println("   word not found in doc!");
 			return null;
 		}
 
@@ -55,7 +55,7 @@ public class Dictionary implements DictionaryService {
 		if(elements.size() > 0) {
 			wordInfo.setType(elements.get(0).html());
 			if (wordInfo.getTypeShort().equals(""))
-				System.out.println("Type: "+wordInfo.getType());
+				System.out.println("   typemis: "+wordInfo.getType());
 		}
 
 		// Pronoun
@@ -70,7 +70,7 @@ public class Dictionary implements DictionaryService {
 		if (elements.size() > 0)
 			wordInfo.setTrans(elements.get(0).html());
 
-		System.out.println("   Found");
+		System.out.println("   found");
 		return wordInfo;
 	}
 

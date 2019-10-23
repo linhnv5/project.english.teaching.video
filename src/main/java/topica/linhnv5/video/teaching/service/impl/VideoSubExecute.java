@@ -37,6 +37,7 @@ import topica.linhnv5.video.teaching.model.SubVideoTaskResult;
 import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.model.WordInfo;
 import topica.linhnv5.video.teaching.service.DictionaryService;
+import topica.linhnv5.video.teaching.util.FileUtil;
 import topica.linhnv5.video.teaching.zing.ZingMp3;
 import topica.linhnv5.video.teaching.zing.model.SearchItem;
 import topica.linhnv5.video.teaching.zing.model.StreamResult;
@@ -71,6 +72,19 @@ public class VideoSubExecute {
 	@Value("${video.teaching.text.time}")
 	private int textTime;
 
+	/**
+	 * Draw a box to video
+	 * @param from
+	 * @param to
+	 * @param x
+	 * @param y
+	 * @param w
+	 * @param h
+	 * @param color
+	 * @param opacity
+	 * @param t
+	 * @return
+	 */
 	private String drawBox(double from, double to, int x, int y, int w, int h, String color, float opacity, int t) {
 		return new StringBuilder(",drawbox=").append(x).append(":").append(y).append(":").append(w).append(":").append(h)
 				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
@@ -79,6 +93,17 @@ public class VideoSubExecute {
 				.toString();
 	}
 
+	/**
+	 * Draw a text to video
+	 * @param text
+	 * @param from
+	 * @param to
+	 * @param x
+	 * @param y
+	 * @param color
+	 * @param size
+	 * @return
+	 */
 	private String drawText(String text, double from, double to, int x, int y, String color, long size) {
 		StringBuilder buff = new StringBuilder(",drawtext=text='").append(text.replaceAll("\'", "\'\'").replaceAll("\"", "\"\"")).append("'")
 				.append(":x=").append(x).append(":y=").append(y)
@@ -89,6 +114,15 @@ public class VideoSubExecute {
 		return buff.toString();
 	}
 
+	/**
+	 * Draw a box of word, word type, word trans to video
+	 * @param info
+	 * @param from
+	 * @param to
+	 * @param x
+	 * @param y
+	 * @return
+	 */
 	private String drawWordInfo(WordInfo info, double from, double to, int x, int y) {
 		// Color
 		String wordColor = "yellow", boxColor = "black";
@@ -291,8 +325,8 @@ public class VideoSubExecute {
 		String inputFileName = track.replaceAll(" ", "_")+"("+artist.replaceAll(" ", "_")+")";
 
 		// Input and output file
-		File input  = new File(inFolder  + inputFileName + ".mp3");
-		File output = new File(outFolder + inputFileName + ".mp4");
+		File input  = FileUtil.matchFileName(inFolder, inputFileName + ".mp3");
+		File output = new File(outFolder + input.getName().substring(0, input.getName().length()-4)+".mp4");
 
 		// Sub file
 		File sub    = null;

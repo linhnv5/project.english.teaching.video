@@ -40,6 +40,7 @@ import topica.linhnv5.video.teaching.model.TaskImageRequest;
 import topica.linhnv5.video.teaching.model.TaskInfoResult;
 import topica.linhnv5.video.teaching.service.TaskService;
 import topica.linhnv5.video.teaching.service.VideoSubService;
+import topica.linhnv5.video.teaching.util.FileUtil;
 
 /**
  * Controller for api main, input a video, background image, Name of Track, Name of Artist <br/>
@@ -63,23 +64,6 @@ public class ApiController {
 	@Value("${video.teaching.infolder}")
 	private String inFolder;
 
-	/**
-	 * Generate new file name
-	 * @param path Input path
-	 * @param name Input file name
-	 * @return new File
-	 */
-	public static synchronized File matchFileName(String path, String name) {
-		File f;
-		if (!(f = new File(path+name)).exists())
-			return f;
-
-		int id = 1;
-		while ((f = new File(path+name+"_"+id)).exists());
-
-		return f;
-	}
-
 	@PostMapping(path = "/create.fromvideo")
 	@ApiOperation(value = "Create subbing video task from video", response = TaskResponse.class)
 	@ApiResponses({
@@ -98,14 +82,14 @@ public class ApiController {
 				throw new Exception("Video is not specific");
 
 			// Move input video to input folder
-			File inFile = new File(inFolder + request.getVideo().getOriginalFilename().replaceAll("\'", "").replaceAll(" ", "_"));
+			File inFile = FileUtil.matchFileName(inFolder, request.getVideo().getOriginalFilename());
 
 			request.getVideo().transferTo(inFile);
 
 			// if sub exists then move it to input folder
 			File inSub = null;
 			if (request.getSub() != null)
-				request.getSub().transferTo(inSub = new File(inFolder + request.getSub().getOriginalFilename().replaceAll("\'", "").replaceAll(" ", "_")));
+				request.getSub().transferTo(inSub = FileUtil.matchFileName(inFolder, request.getSub().getOriginalFilename()));
 
 			// Get info of video file
 			FFmpegProbeResult probeResult = ffprobe.probe(inFile.getPath());
@@ -140,18 +124,18 @@ public class ApiController {
 				throw new Exception("Can't get information about music name and music artist!");
 
 			// Print the track name and artist name
-			System.out.println("Track: "+track+" artist: "+artist);
+			System.out.println("Request sub video track: "+track+" artist: "+artist);
 
 			// Create and return a task
 			Task<SubVideoTaskResult> task = videoSubService.addSubToVideo(track, artist, inFile.getName(), inSub == null ? null : inSub.getName());
 
 			// 
-			System.out.println("Return task id="+task.getId());
+			System.out.println("   return task id="+task.getId());
 
 			// Return task name
 			response = new TaskResponse("SUCCESS", "", task.getId());
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("   err: "+e.getMessage());
 			response = new TaskResponse("ERROR", e.getMessage(), "");
 		}
 
@@ -174,12 +158,12 @@ public class ApiController {
 			// Check request
 			File inFile = null;
 			if (request.getBackground() != null)
-				request.getBackground().transferTo(inFile = new File(inFolder + request.getBackground().getOriginalFilename().replaceAll("\'", "").replaceAll(" ", "_")));
+				request.getBackground().transferTo(inFile = FileUtil.matchFileName(inFolder, request.getBackground().getOriginalFilename()));
 
 			// if sub exists then move it to input folder
 			File inSub = null;
 			if (request.getSub() != null)
-				request.getSub().transferTo(inSub = new File(inFolder + request.getSub().getOriginalFilename().replaceAll("\'", "").replaceAll(" ", "_")));
+				request.getSub().transferTo(inSub = FileUtil.matchFileName(inFolder, request.getSub().getOriginalFilename()));
 
 			// Get track and artist name
 			track = request.getTitle();
@@ -190,18 +174,18 @@ public class ApiController {
 				throw new Exception("Can't get information about music name and music artist!");
 
 			// Print the track name and artist name
-			System.out.println("Track: "+track+" artist: "+artist);
+			System.out.println("Request sub image track: "+track+" artist: "+artist);
 
 			// Create and return a task
 			Task<SubVideoTaskResult> task = videoSubService.createSubVideoFromMusic(track, artist, inFile == null ? null : inFile.getName(), inSub == null ? null : inSub.getName());
 
 			// 
-			System.out.println("Return task id="+task.getId());
+			System.out.println("   return task id="+task.getId());
 
 			// Return task name
 			response = new TaskResponse("SUCCESS", "", task.getId());
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("   err: "+e.getMessage());
 			response = new TaskResponse("ERROR", e.getMessage(), "");
 		}
 
@@ -216,7 +200,7 @@ public class ApiController {
 	})
 	public ResponseEntity<String> getSubtitle(@RequestParam("title") String title, @RequestParam("artist") String artist) {
 		// Print the track name and artist name
-		System.out.println("Track: "+title+" artist: "+artist);
+		System.out.println("Request sub track: "+title+" artist: "+artist);
 
 		// 
 		SongLyric lyric = null;
@@ -225,6 +209,7 @@ public class ApiController {
 		try {
 			lyric = videoSubService.getSubtitle(title, artist);
 		} catch(Exception e) {
+			System.out.println("   err: "+e.getMessage());
 		}
 
 		if (lyric == null)
@@ -304,8 +289,8 @@ public class ApiController {
 
 		// Return value
 		MediaType mediaType = getMediaTypeForFileName(resultTask.getOutput().getName());
-		System.out.println("fileName: " + resultTask.getOutput().getName());
-		System.out.println("mediaType: " + mediaType);
+//		System.out.println("fileName: " + resultTask.getOutput().getName());
+//		System.out.println("mediaType: " + mediaType);
 
 		InputStreamResource resource = new InputStreamResource(new FileInputStream(resultTask.getOutput()));
 

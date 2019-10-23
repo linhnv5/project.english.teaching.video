@@ -219,19 +219,22 @@ public class SongLyric {
 	 * @param textTime   minimun time of text show
 	 */
 	public void markRandomText(DictionaryService dictionary, int textTime) {
-		int nText = 0; Lyric before = null;
+//		int nText = 0;
+
+		Lyric before = null;
 
 		for (Lyric l : this.song) {
 			if (before != null && l.getFromTimestamp()-before.getToTimestamp() < textTime)
 				continue;
 			if (ThreadLocalRandom.current().nextInt(100) < 40) {
 				if (l.markSomeText(dictionary) != null) {
-					nText++; before = l; mark.add(l.getMark());
+//					nText++;
+					before = l; mark.add(l.getMark());
 				}
 			}
 		}
 
-		System.out.println("NText: "+nText);
+//		System.out.println("NText: "+nText);
 	}
 
 	/**

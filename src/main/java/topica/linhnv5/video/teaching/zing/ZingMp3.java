@@ -38,7 +38,7 @@ public class ZingMp3 {
 	private String secretKey;
 
 	public static String sendRequest(String requestString) throws ZingServiceException {
-		System.out.println("Request: "+requestString);
+//		System.out.println("Request: "+requestString);
 
 		StringBuffer buffer = new StringBuffer();
 
@@ -65,7 +65,7 @@ public class ZingMp3 {
 	}
 
 	public static byte[] sendRequestBinary(String requestString) throws ZingServiceException {
-		System.out.println("Request: "+requestString);
+//		System.out.println("Request: "+requestString);
 
 		try {
 			URL url = new URL(requestString);
@@ -184,7 +184,7 @@ public class ZingMp3 {
 		for (int i = 0; i < result.getData().getItems().length; i++) {
 			SearchItem item = result.getData().getItems()[i];
 			if (StringUtils.containsIgnoreCase(item.getArtistsNames(), artistName) && StringUtils.containsIgnoreCase(trackName, item.getTitle())) {
-				System.out.println("Found Lyric");
+//				System.out.println("Found Lyric");
 				return item;
 			}
 		}

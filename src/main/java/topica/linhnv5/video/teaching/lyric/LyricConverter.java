@@ -160,7 +160,7 @@ public class LyricConverter {
 				inSongLyric.addLyric(lrc);
 	        }
 	        
-	        System.out.println("Lyric: "+inSongLyric.getSong().size());
+//	        System.out.println("Lyric: "+inSongLyric.getSong().size());
 		} catch(Exception e) {
 		}
 
@@ -187,7 +187,7 @@ public class LyricConverter {
 
 		StringBuilder buff = new StringBuilder();
 		
-		System.out.println(">> INFO: Converting to .srt ..");
+//		System.out.println(">> INFO: Converting to .srt ..");
 
 		// Define default value
 		List<Lyric> inSong = inSongLyric.getSong();
@@ -235,7 +235,7 @@ public class LyricConverter {
 			buff.append('\n');
 		}
 
-		System.out.println(">> INFO: Succesfully convert!");
+//		System.out.println(">> INFO: Succesfully convert!");
 
 		return buff.toString();
 	}

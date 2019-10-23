@@ -33,6 +33,11 @@ public class TaskServiceImpl implements TaskService {
 		return null;
 	}
 
+	/**
+	 * Check if task id exists
+	 * @param id id of task
+	 * @return true if exists
+	 */
 	private boolean isContainTask(String id) {
 		for (Task<?> task : listOfTask) {
 			if (task.getId().equals(id))
