@@ -17,8 +17,17 @@ public class FileUtil {
 		if (!(f = new File(path+name)).exists())
 			return f;
 
-		int id = 1;
-		while ((f = new File(path+name+"_"+id)).exists());
+		int id = name.lastIndexOf('.'); String extension;
+
+		if (id < 0) {
+			extension = "";
+		} else {
+			extension = name.substring(id);
+			name = name.substring(0, id);
+		}
+
+		id = 1;
+		while ((f = new File(path+name+"_"+id+extension)).exists()) id++;
 
 		return f;
 	}

@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.cloud.translate.Translate;
-import com.google.cloud.translate.Translation;
-import com.google.cloud.translate.Translate.TranslateOption;
 
 import topica.linhnv5.video.teaching.model.WordInfo;
 import topica.linhnv5.video.teaching.service.DictionaryService;
@@ -242,12 +240,8 @@ public class SongLyric {
 	 * @param translate
 	 */
 	public void translate(Translate translate) {
-		for (Lyric l : this.song) {
-			Translation translation = translate.translate(l.getSourceLyric(),
-					TranslateOption.sourceLanguage("en"),
-					TranslateOption.targetLanguage("vi"));
-			l.setLyricTrans(translation.getTranslatedText());
-		}
+		for (Lyric l : this.song)
+			l.translate(translate);
 	}
 
 }

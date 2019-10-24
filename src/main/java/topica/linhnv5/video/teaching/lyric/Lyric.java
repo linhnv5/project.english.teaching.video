@@ -4,6 +4,10 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.util.StringUtils;
 
+import com.google.cloud.translate.Translate;
+import com.google.cloud.translate.Translation;
+import com.google.cloud.translate.Translate.TranslateOption;
+
 import topica.linhnv5.video.teaching.model.WordInfo;
 import topica.linhnv5.video.teaching.service.DictionaryService;
 
@@ -266,6 +270,17 @@ public class Lyric {
 		} while(aLyric[next].contains("'") || (wordInfo = dictionary.searchWord(aLyric[next])) == null);
 
 		return this.mark = wordInfo;
+	}
+
+	public void translate(Translate translate) {
+		if (lyric.equals("") || StringUtils.startsWithIgnoreCase(lyric, "Bài hát") || StringUtils.startsWithIgnoreCase(lyric, "Ca sĩ"))
+			return;
+
+		Translation translation = translate.translate(this.lyric,
+				TranslateOption.sourceLanguage("en"),
+				TranslateOption.targetLanguage("vi"));
+
+		this.lyricTrans = translation.getTranslatedText();
 	}
 
 	/**

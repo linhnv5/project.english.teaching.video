@@ -1,5 +1,6 @@
 package topica.linhnv5.video.teaching.controller;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -198,7 +199,7 @@ public class ApiController {
 		@ApiResponse(code = 200, message = "Successful get the subtitle"),
 		@ApiResponse(code = 204, message = "Error occur while get the subtitle")
 	})
-	public ResponseEntity<String> getSubtitle(@RequestParam("title") String title, @RequestParam("artist") String artist) {
+	public ResponseEntity<?> getSubtitle(@RequestParam("title") String title, @RequestParam("artist") String artist) throws Exception {
 		// Print the track name and artist name
 		System.out.println("Request sub track: "+title+" artist: "+artist);
 
@@ -215,7 +216,20 @@ public class ApiController {
 		if (lyric == null)
 			return new ResponseEntity<String>(HttpStatus.NO_CONTENT);
 
-		return new ResponseEntity<String>(LyricConverter.writeCSV(lyric), HttpStatus.OK);
+		// Return value
+		MediaType mediaType = getMediaTypeForFileName("a.csv");
+
+		byte[] data = LyricConverter.writeCSV(lyric).getBytes("UTF-8");
+		InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(data));
+
+		return ResponseEntity.ok()
+				// Content-Disposition
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename="+(title+"_"+artist+".csv").replaceAll(" ", "_"))
+				// Content-Type
+				.contentType(mediaType)
+				// Contet-Length
+				.contentLength(data.length) //
+				.body(resource);
 	}
 
 	@GetMapping(path = "/task")

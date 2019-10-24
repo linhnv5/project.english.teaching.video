@@ -2,7 +2,7 @@ package topica.linhnv5.video.teaching.model;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.annotations.ApiParam;
 
 /**
  * Request model hold information about chart name, artist name, video, type
@@ -15,25 +15,25 @@ public class TaskImageRequest {
 	/**
 	 * Name of music video
 	 */
-	@ApiModelProperty("Track name")
+	@ApiParam(required = true, value = "Track name")
 	private String title;
 
 	/**
 	 * Main artist name
 	 */
-	@ApiModelProperty("Artist name")
+	@ApiParam(required = true, value = "Artist name")
 	private String artist;
 
 	/**
 	 * If video is not specify, api will download music file and add background to video
 	 */
-	@ApiModelProperty("Background of output video(image or short video)")
+	@ApiParam(required = false, value = "Background of output video(image or short video)")
 	private MultipartFile background;
 
 	/**
 	 * Sub file
 	 */
-	@ApiModelProperty("Subtitle file (csv)")
+	@ApiParam(required = false, value = "Subtitle file (csv)")
 	private MultipartFile sub;
 
 	/**
