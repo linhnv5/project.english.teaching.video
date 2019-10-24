@@ -33,7 +33,7 @@ import net.bramp.ffmpeg.progress.ProgressListener;
 import topica.linhnv5.video.teaching.lyric.Lyric;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
-import topica.linhnv5.video.teaching.model.SubVideoTaskResult;
+import topica.linhnv5.video.teaching.model.VideoTaskResult;
 import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.model.WordInfo;
 import topica.linhnv5.video.teaching.service.DictionaryService;
@@ -176,8 +176,8 @@ public class VideoSubExecute {
 	}
 
 	@Async("threadPoolExecutor")
-	public Future<SubVideoTaskResult> doAddSubToVideo(String track, String artist, String inputFileName, String inputSubName, Task<SubVideoTaskResult> task) {
-		SubVideoTaskResult result = new SubVideoTaskResult();
+	public Future<VideoTaskResult> doAddSubToVideo(String track, String artist, String inputFileName, String inputSubName, Task<VideoTaskResult> task) {
+		VideoTaskResult result = new VideoTaskResult();
 
 		// Input and output file
 		File input  = new File(inFolder  + inputFileName);
@@ -315,12 +315,12 @@ public class VideoSubExecute {
 			result.setException(e);
 		}
 
-		return new AsyncResult<SubVideoTaskResult>(result);
+		return new AsyncResult<VideoTaskResult>(result);
 	}
 
 	@Async("threadPoolExecutor")
-	public Future<SubVideoTaskResult> doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputSubName, Task<SubVideoTaskResult> task) {
-		SubVideoTaskResult result = new SubVideoTaskResult();
+	public Future<VideoTaskResult> doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputSubName, Task<VideoTaskResult> task) {
+		VideoTaskResult result = new VideoTaskResult();
 
 		String inputFileName = track.replaceAll(" ", "_")+"("+artist.replaceAll(" ", "_")+")";
 
@@ -535,7 +535,7 @@ public class VideoSubExecute {
 			result.setException(e);
 		}
 
-		return new AsyncResult<SubVideoTaskResult>(result);
+		return new AsyncResult<VideoTaskResult>(result);
 	}
 
 	public SearchItem doGetMatchingTrack(String track, String artist) throws Exception {

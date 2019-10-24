@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import topica.linhnv5.video.teaching.lyric.SongLyric;
-import topica.linhnv5.video.teaching.model.SubVideoTaskResult;
+import topica.linhnv5.video.teaching.model.VideoTaskResult;
 import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.service.TaskService;
 import topica.linhnv5.video.teaching.service.VideoSubException;
@@ -22,12 +22,12 @@ public class VideoSubServiceImpl implements VideoSubService {
 	private VideoSubExecute execute;
 
 	@Override
-	public Task<SubVideoTaskResult> addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName) throws VideoSubException {
+	public Task<VideoTaskResult> addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName) throws VideoSubException {
 		// Create task
-		Task<SubVideoTaskResult> task = new Task<SubVideoTaskResult>();
+		Task<VideoTaskResult> task = new Task<VideoTaskResult>();
 
 		// Create async job
-		Future<SubVideoTaskResult> future = execute.doAddSubToVideo(track, artist, inputFileName, inputSubFileName, task);
+		Future<VideoTaskResult> future = execute.doAddSubToVideo(track, artist, inputFileName, inputSubFileName, task);
 
 		// Set task
 		task.setTask(future);
@@ -40,12 +40,12 @@ public class VideoSubServiceImpl implements VideoSubService {
 	}
 
 	@Override
-	public Task<SubVideoTaskResult> createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputSubFileName) throws VideoSubException {
+	public Task<VideoTaskResult> createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputSubFileName) throws VideoSubException {
 		// Create task
-		Task<SubVideoTaskResult> task = new Task<SubVideoTaskResult>();
+		Task<VideoTaskResult> task = new Task<VideoTaskResult>();
 
 		// Create async job
-		Future<SubVideoTaskResult> future = execute.doCreateSubVideoFromMusic(track, artist, inputBackFileName, inputSubFileName, task);
+		Future<VideoTaskResult> future = execute.doCreateSubVideoFromMusic(track, artist, inputBackFileName, inputSubFileName, task);
 
 		// Set task
 		task.setTask(future);

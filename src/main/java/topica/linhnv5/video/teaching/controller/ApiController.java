@@ -16,28 +16,27 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.google.common.net.HttpHeaders;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegFormat;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.probe.FFmpegStream;
-import topica.linhnv5.video.teaching.model.TaskVideoRequest;
 import topica.linhnv5.video.teaching.model.TaskResponse;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
-import topica.linhnv5.video.teaching.model.SubVideoTaskResult;
+import topica.linhnv5.video.teaching.model.VideoTaskResult;
 import topica.linhnv5.video.teaching.model.Task;
-import topica.linhnv5.video.teaching.model.TaskImageRequest;
 import topica.linhnv5.video.teaching.model.TaskInfoResult;
 import topica.linhnv5.video.teaching.service.TaskService;
 import topica.linhnv5.video.teaching.service.VideoSubService;
@@ -70,27 +69,39 @@ public class ApiController {
 	@ApiResponses({
 		@ApiResponse(code = 200, message = "Result SUCCESS status if successful, ERROR if some error occur")
 	})
-	public ResponseEntity<TaskResponse> addSubFromVideo(@ModelAttribute TaskVideoRequest request) {
+	public ResponseEntity<TaskResponse> addSubFromVideo(
+			@ApiParam(value = "Track name(must be define if video metadata not have title)", required = false)
+			@RequestParam(value = "title", required = false)
+				String title,
+			@ApiParam(value = "Artist name(must be define if video metadata not have artist)", required = false)
+			@RequestParam(value = "artist", required = false)
+				String artist,
+			@ApiParam(value = "Video input", required = true)
+			@RequestParam(value = "video", required = true)
+				MultipartFile video,
+			@ApiParam(value = "Subtitle file (csv)", required = false)		
+			@RequestParam(value = "sub", required = false)
+				MultipartFile sub) {
 		// The response
 		TaskResponse response = null;
 
 		try {
 			// Info track, artist
-			String track, artist;
+			String trackName, artistName;
 
 			// Check request
-			if (request.getVideo() == null)
+			if (video == null)
 				throw new Exception("Video is not specific");
 
 			// Move input video to input folder
-			File inFile = FileUtil.matchFileName(inFolder, request.getVideo().getOriginalFilename());
+			File inFile = FileUtil.matchFileName(inFolder, video.getOriginalFilename());
 
-			request.getVideo().transferTo(inFile);
+			video.transferTo(inFile);
 
 			// if sub exists then move it to input folder
 			File inSub = null;
-			if (request.getSub() != null)
-				request.getSub().transferTo(inSub = FileUtil.matchFileName(inFolder, request.getSub().getOriginalFilename()));
+			if (sub != null)
+				sub.transferTo(inSub = FileUtil.matchFileName(inFolder, sub.getOriginalFilename()));
 
 			// Get info of video file
 			FFmpegProbeResult probeResult = ffprobe.probe(inFile.getPath());
@@ -110,25 +121,25 @@ public class ApiController {
 			);
 
 			// Get the artist and track
-			track = format.tags.get("title");
-			artist = format.tags.get("artist");
+			trackName = format.tags.get("title");
+			artistName = format.tags.get("artist");
 
 			// Check if artist or track name null then get from request
-			if (track == null)
-				track = request.getTitle();
+			if (trackName == null)
+				trackName = title;
 
-			if (artist == null)
-				artist = request.getArtist();
+			if (artistName == null)
+				artistName = artist;
 
 			// Check if track and artist exists
-			if (track == null || artist == null)
+			if (trackName == null || artistName == null)
 				throw new Exception("Can't get information about music name and music artist!");
 
 			// Print the track name and artist name
-			System.out.println("Request sub video track: "+track+" artist: "+artist);
+			System.out.println("Request sub video track: "+trackName+" artist: "+artistName);
 
 			// Create and return a task
-			Task<SubVideoTaskResult> task = videoSubService.addSubToVideo(track, artist, inFile.getName(), inSub == null ? null : inSub.getName());
+			Task<VideoTaskResult> task = videoSubService.addSubToVideo(trackName, artistName, inFile.getName(), inSub == null ? null : inSub.getName());
 
 			// 
 			System.out.println("   return task id="+task.getId());
@@ -148,37 +159,42 @@ public class ApiController {
 	@ApiResponses({
 		@ApiResponse(code = 200, message = "Result SUCCESS status if successful, ERROR if some error occur")
 	})
-	public ResponseEntity<TaskResponse> addSubFromImage(@ModelAttribute TaskImageRequest request) {
+	public ResponseEntity<TaskResponse> addSubFromImage(
+			@ApiParam(value = "Track name(must be define if video metadata not have title)", required = true)
+			@RequestParam(value = "title", required = true)
+				String title,
+			@ApiParam(value = "Artist name(must be define if video metadata not have artist)", required = true)
+			@RequestParam(value = "artist", required = true)
+				String artist,
+			@ApiParam(value = "Background of output video(image or short video)", required = false)
+			@RequestParam(value = "background", required = false)
+				MultipartFile background,
+			@ApiParam(value = "Subtitle file (csv)", required = false)
+			@RequestParam(value = "sub", required = false)
+				MultipartFile sub) {
 		// The response
 		TaskResponse response = null;
 
 		try {
-			// Info track, artist
-			String track, artist;
-
 			// Check request
 			File inFile = null;
-			if (request.getBackground() != null)
-				request.getBackground().transferTo(inFile = FileUtil.matchFileName(inFolder, request.getBackground().getOriginalFilename()));
+			if (background != null)
+				background.transferTo(inFile = FileUtil.matchFileName(inFolder, background.getOriginalFilename()));
 
 			// if sub exists then move it to input folder
 			File inSub = null;
-			if (request.getSub() != null)
-				request.getSub().transferTo(inSub = FileUtil.matchFileName(inFolder, request.getSub().getOriginalFilename()));
-
-			// Get track and artist name
-			track = request.getTitle();
-			artist = request.getArtist();
+			if (sub != null)
+				sub.transferTo(inSub = FileUtil.matchFileName(inFolder, sub.getOriginalFilename()));
 
 			// Check if track and artist exists
-			if (track == null || artist == null)
+			if (title == null || artist == null)
 				throw new Exception("Can't get information about music name and music artist!");
 
 			// Print the track name and artist name
-			System.out.println("Request sub image track: "+track+" artist: "+artist);
+			System.out.println("Request sub image track: "+title+" artist: "+artist);
 
 			// Create and return a task
-			Task<SubVideoTaskResult> task = videoSubService.createSubVideoFromMusic(track, artist, inFile == null ? null : inFile.getName(), inSub == null ? null : inSub.getName());
+			Task<VideoTaskResult> task = videoSubService.createSubVideoFromMusic(title, artist, inFile == null ? null : inFile.getName(), inSub == null ? null : inSub.getName());
 
 			// 
 			System.out.println("   return task id="+task.getId());
@@ -239,14 +255,14 @@ public class ApiController {
 		@ApiResponse(code = 404, message = "TaskID is not found")
 	})
 	public ResponseEntity<TaskInfoResult> getTaskInfo(@RequestParam("id") String id) throws InterruptedException, ExecutionException {
-		Task<SubVideoTaskResult> task = taskService.getTaskById(id, SubVideoTaskResult.class);
+		Task<VideoTaskResult> task = taskService.getTaskById(id, VideoTaskResult.class);
 
 		if (task == null)
 			return new ResponseEntity<TaskInfoResult>(HttpStatus.NOT_FOUND);
 		
 		TaskInfoResult result = new TaskInfoResult();
 		if (task.getStatus() == Task.Status.FINISHED) {
-			SubVideoTaskResult resultTask = task.get();
+			VideoTaskResult resultTask = task.get();
 			if (resultTask.getException() != null) {
 				result.setStatus("ERROR");
 				result.setError(resultTask.getException().getMessage());
@@ -290,7 +306,7 @@ public class ApiController {
 		@ApiResponse(code = 204, message = "Task isn't finnished yet")
 	})
 	public ResponseEntity<?> getTaskResult(@RequestParam("id") String id) throws InterruptedException, ExecutionException, FileNotFoundException {
-		Task<SubVideoTaskResult> task = taskService.getTaskById(id, SubVideoTaskResult.class);
+		Task<VideoTaskResult> task = taskService.getTaskById(id, VideoTaskResult.class);
 
 		if (task == null)
 			return new ResponseEntity<String>("Task not found!", HttpStatus.NOT_FOUND);
@@ -299,7 +315,7 @@ public class ApiController {
 			return new ResponseEntity<String>("Task not finish!", HttpStatus.NO_CONTENT);
 
 		// get result
-		SubVideoTaskResult resultTask = task.get();
+		VideoTaskResult resultTask = task.get();
 
 		// Return value
 		MediaType mediaType = getMediaTypeForFileName(resultTask.getOutput().getName());

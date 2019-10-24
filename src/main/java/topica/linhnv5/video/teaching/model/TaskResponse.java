@@ -9,10 +9,16 @@ import io.swagger.annotations.ApiModelProperty;
 public class TaskResponse {
 
 	/**
-	 * Header of request, include errcode, status
+	 * Status of request, SUCCESS if command return OK, ERROR if there are some error occur
 	 */
-	@ApiModelProperty("Header of response")
-	private ResponseHeader header;
+	@ApiModelProperty("Status of request, SUCCESS for OK, ERROR othewise")
+	private String status;
+
+	/**
+	 * Request error message
+	 */
+	@ApiModelProperty("If the status is ERROR, this return infomation about error occur")
+	private String mess;
 
 	/**
 	 * Task id of request, using to check status of request and get the result
@@ -34,22 +40,37 @@ public class TaskResponse {
 	 * @param task
 	 */
 	public TaskResponse(String status, String errMss, String task) {
-		this.header = new ResponseHeader(status, errMss);
+		this.status = status;
+		this.mess = errMss;
 		this.task = task;
 	}
 
 	/**
-	 * @return the header
+	 * @return the status
 	 */
-	public ResponseHeader getHeader() {
-		return header;
+	public String getStatus() {
+		return status;
 	}
 
 	/**
-	 * @param header the header to set
+	 * @param status the status to set
 	 */
-	public void setHeader(ResponseHeader header) {
-		this.header = header;
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	/**
+	 * @return the errMess
+	 */
+	public String getMess() {
+		return mess;
+	}
+
+	/**
+	 * @param mess the errMess to set
+	 */
+	public void setMess(String mess) {
+		this.mess = mess;
 	}
 
 	/**
