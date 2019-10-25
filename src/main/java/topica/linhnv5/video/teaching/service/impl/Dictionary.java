@@ -47,22 +47,22 @@ public class Dictionary implements DictionaryService {
 			return null;
 		}
 
-		wordInfo.setWord(elements.get(0).html());
+		wordInfo.setWordDictionary(elements.get(0).html());
 
 		// Type
 		elements = doc.select(".pos.dpos");
 
 		if(elements.size() > 0) {
 			wordInfo.setType(elements.get(0).html());
-			if (wordInfo.getTypeShort().equals(""))
-				System.out.println("   typemis: "+wordInfo.getType());
+//			if (wordInfo.getTypeShort().equals(""))
+//				System.out.println("   typemis: "+wordInfo.getType());
 		}
 
 		// Pronoun
 		elements = doc.select(".ipa.dipa");
 
 		if (elements.size() > 0)
-			wordInfo.setPronoun("/"+elements.get(0).html()+"/");
+			wordInfo.setAPI("/"+elements.get(0).html()+"/");
 
 		// Trans
 		elements = doc.select(".trans.dtrans");

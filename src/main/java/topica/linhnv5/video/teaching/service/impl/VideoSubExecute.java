@@ -137,12 +137,12 @@ public class VideoSubExecute {
 		int xt = 20, yt = 20;
 
 		// W, H of box
-		int w = info.getWord().length()*15, h = 0;
+		int w = info.getWordDictionary().length()*15, h = 0;
 
 		if (to - from < textTime)
 			to = from + textTime;
 
-		StringBuilder buff = new StringBuilder(drawText(info.getWord(), from, to, x+xt, y+yt, wordColor, textSize*2)); h += textSize + 5;
+		StringBuilder buff = new StringBuilder(drawText(info.getWordDictionary(), from, to, x+xt, y+yt, wordColor, textSize*2)); h += textSize + 5;
 
 		if (info.getType() != null && !info.getType().equals("")) {
 			buff.append(drawBox(from, to, x+xt, y+yt+h+5, info.getType().length() * textW, textSize, wordColor, 1.0F, 2));
@@ -152,11 +152,11 @@ public class VideoSubExecute {
 				w = info.getType().length()*textW;
 		}
 
-		if (info.getPronoun() != null && !info.getPronoun().equals("")) {
-			buff.append(drawText(info.getPronoun(), from, to, x+xt, y+yt+h, wordColor, textSize));
+		if (info.getAPI() != null && !info.getAPI().equals("")) {
+			buff.append(drawText(info.getAPI(), from, to, x+xt, y+yt+h, wordColor, textSize));
 			h += textSize;
-			if (info.getPronoun().length()*textW > w)
-				w = info.getPronoun().length()*textW;
+			if (info.getAPI().length()*textW > w)
+				w = info.getAPI().length()*textW;
 		}
 
 		if (info.getTrans() != null && !info.getTrans().equals("")) {
@@ -183,18 +183,16 @@ public class VideoSubExecute {
 		File input  = new File(inFolder  + inputFileName);
 		File output = new File(outFolder + inputFileName);
 
-		File sub    = null;
+		File sub    = new File(input.getPath()+".srt");
 
 		try {
 			// Get the lyric
 			SongLyric songLyric = null;
 
 			// If sub file specific
-			if (inputSubName != null) {
-				sub = new File(inFolder + inputSubName);
-
-				songLyric = LyricConverter.readCSV(Files.lines(Paths.get(sub.getPath()), StandardCharsets.UTF_8).collect(Collectors.joining("\n")));
-			} else {
+			if (inputSubName != null)
+				songLyric = LyricConverter.readCSV(Files.lines(Paths.get(inFolder+inputSubName), StandardCharsets.UTF_8).collect(Collectors.joining("\n")), dictionary);
+			else {
 				//
 				System.out.println("Search MP3");
 
@@ -211,7 +209,7 @@ public class VideoSubExecute {
 			// Write subtitle to file
 			FileOutputStream fos = null;
 			try {
-				fos = new FileOutputStream(sub = new File(input.getPath()+".srt"));
+				fos = new FileOutputStream(sub);
 				fos.write(lyric.getBytes("UTF-8"));
 			} catch(Exception e) {
 				e.printStackTrace();
@@ -319,42 +317,97 @@ public class VideoSubExecute {
 	}
 
 	@Async("threadPoolExecutor")
-	public Future<VideoTaskResult> doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputSubName, Task<VideoTaskResult> task) {
+	public Future<VideoTaskResult> doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputMusicFileName, String inputSubName, Task<VideoTaskResult> task) {
 		VideoTaskResult result = new VideoTaskResult();
 
+		// input name
 		String inputFileName = track.replaceAll(" ", "_")+"("+artist.replaceAll(" ", "_")+")";
 
 		// Input and output file
-		File input  = FileUtil.matchFileName(inFolder, inputFileName + ".mp3");
-		File output = new File(outFolder + input.getName().substring(0, input.getName().length()-4)+".mp4");
-
-		// Sub file
-		File sub    = null;
-
-		// Back image
-		File back   = new File(inFolder  + (inputBackName != null ? inputBackName : "image" + File.separator + "back" + ThreadLocalRandom.current().nextInt(5) + ".jpg"));
-
-		boolean mp4 = !servletContext.getMimeType(back.getName()).startsWith("image");
+		File input, back, sub, output;
 
 		try {
-			//
-			System.out.println("Search MP3");
+			if (inputBackName != null)
+				back = new File(inFolder + inputBackName);
+			else
+				back = new File(inFolder + "image" + File.separator + "back" + ThreadLocalRandom.current().nextInt(5) + ".jpg");
 
-			// Search item
-			SearchItem item = zingMp3.getMatchingTrack(track, artist);
+			// back mp4 ?
+			boolean mp4 = !servletContext.getMimeType(back.getName()).startsWith("image");
 
-			// Get the lyric
-			SongLyric songLyric = null;
+			// Item mp3
+			SearchItem item = null;
+
+			// search music and lyric
+			if (inputMusicFileName == null || inputSubName == null) {
+				//
+				System.out.println("Search MP3");
+
+				// Search item
+				item = zingMp3.getMatchingTrack(track, artist);
+			}
+
+			// if music file specific
+			if (inputMusicFileName != null)
+				input = new File(inFolder+inputMusicFileName);
+			else {
+				input = FileUtil.matchFileName(inFolder, inputFileName + ".mp3");
+
+				// get stream mp3
+				String link;
+
+				try {
+					// Get link stream
+					StreamResult streamResult = zingMp3.getStream(item.getId());
+
+					String link128 = streamResult.getData().getData().getLink128();
+					String link320 = streamResult.getData().getData().getLink320();
+
+					// Link address
+					link = link320.equals("") ? link128 : link320;
+				} catch(Exception e) {
+					e.printStackTrace();
+					throw new Exception("An error occur when get the mp3 stream info!");
+				}
+
+				// Print link
+				System.out.println("Link: "+link);
+
+				// Get file
+				FileOutputStream fos = null;
+
+				try {
+					// Get stream data
+					byte[] mp3Data = ZingMp3.sendRequestBinary("http:"+link);
+
+					// Write mp3 to file
+					fos = new FileOutputStream(input);
+					fos.write(mp3Data);
+				} catch(Exception e) {
+					throw new Exception("Could not get mp3 file!");
+				} finally {
+					if (fos != null) {
+						try {
+							fos.close();
+						} catch(Exception e) {
+						}
+					}
+				}
+			}
+
+			// sub file 
+			sub = new File(input.getPath()+".srt");
+
+			// output file
+			output = new File(outFolder + input.getName().substring(0, input.getName().length()-4)+".mp4");
 
 			// If sub file specific
-			if (inputSubName != null) {
-				sub = new File(inFolder + inputSubName);
-
-				songLyric = LyricConverter.readCSV(Files.lines(Paths.get(sub.getPath()), StandardCharsets.UTF_8).collect(Collectors.joining("\n")));
-			} else {
-				// Get the lyric
+			SongLyric songLyric = null;
+			
+			if (inputSubName != null)
+				songLyric = LyricConverter.readCSV(Files.lines(Paths.get(inFolder + inputSubName), StandardCharsets.UTF_8).collect(Collectors.joining("\n")), dictionary);
+			else
 				songLyric = doGetSubtitle(item);
-			}
 
 			// Convert it to srt
 			String lyric = LyricConverter.writeSRT(songLyric);
@@ -362,53 +415,11 @@ public class VideoSubExecute {
 			// Write subtitle to file
 			FileOutputStream fos = null;
 			try {
-				fos = new FileOutputStream(sub = new File(input.getPath()+".srt"));
+				fos = new FileOutputStream(sub);
 				fos.write(lyric.getBytes("UTF-8"));
 			} catch(Exception e) {
 				e.printStackTrace();
 				throw new Exception("Could not write subtitles file, progress fail!");
-			} finally {
-				if (fos != null) {
-					try {
-						fos.close();
-					} catch(Exception e) {
-					}
-				}
-			}
-
-			// get stream mp3
-			String link;
-
-			try {
-				// Get link stream
-				StreamResult streamResult = zingMp3.getStream(item.getId());
-
-				String link128 = streamResult.getData().getData().getLink128();
-				String link320 = streamResult.getData().getData().getLink320();
-
-				// Link address
-				link = link320.equals("") ? link128 : link320;
-			} catch(Exception e) {
-				e.printStackTrace();
-				throw new Exception("An error occur when get the mp3 stream info!");
-			}
-
-			// Print link
-			System.out.println("Link: "+link);
-
-			// Get file
-			fos = null;
-
-			try {
-				// Get stream data
-				byte[] mp3Data = ZingMp3.sendRequestBinary("http:"+link);
-
-				// Write mp3 to file
-				fos = new FileOutputStream(input);
-				fos.write(mp3Data);
-			} catch(Exception e) {
-				e.printStackTrace();
-				throw new Exception("Could not get mp3 file!");
 			} finally {
 				if (fos != null) {
 					try {

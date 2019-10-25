@@ -40,12 +40,12 @@ public class VideoSubServiceImpl implements VideoSubService {
 	}
 
 	@Override
-	public Task<VideoTaskResult> createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputSubFileName) throws VideoSubException {
+	public Task<VideoTaskResult> createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputMusicFileName, String inputSubFileName) throws VideoSubException {
 		// Create task
 		Task<VideoTaskResult> task = new Task<VideoTaskResult>();
 
 		// Create async job
-		Future<VideoTaskResult> future = execute.doCreateSubVideoFromMusic(track, artist, inputBackFileName, inputSubFileName, task);
+		Future<VideoTaskResult> future = execute.doCreateSubVideoFromMusic(track, artist, inputBackFileName, inputMusicFileName, inputSubFileName, task);
 
 		// Set task
 		task.setTask(future);

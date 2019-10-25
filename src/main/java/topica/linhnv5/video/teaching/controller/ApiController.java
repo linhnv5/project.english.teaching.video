@@ -154,12 +154,12 @@ public class ApiController {
 		return new ResponseEntity<TaskResponse>(response, HttpStatus.OK);
 	}
 
-	@PostMapping(path = "/create.fromimage")
-	@ApiOperation(value = "Create subbing video task from background video or image", response = TaskResponse.class)
+	@PostMapping(path = "/create.frommusic")
+	@ApiOperation(value = "Create subbing video task from background and music", response = TaskResponse.class)
 	@ApiResponses({
 		@ApiResponse(code = 200, message = "Result SUCCESS status if successful, ERROR if some error occur")
 	})
-	public ResponseEntity<TaskResponse> addSubFromImage(
+	public ResponseEntity<TaskResponse> addSubFromMusic(
 			@ApiParam(value = "Track name(must be define if video metadata not have title)", required = true)
 			@RequestParam(value = "title", required = true)
 				String title,
@@ -169,6 +169,9 @@ public class ApiController {
 			@ApiParam(value = "Background of output video(image or short video)", required = false)
 			@RequestParam(value = "background", required = false)
 				MultipartFile background,
+			@ApiParam(value = "Music of output video", required = false)
+			@RequestParam(value = "music", required = false)
+				MultipartFile music,
 			@ApiParam(value = "Subtitle file (csv)", required = false)
 			@RequestParam(value = "sub", required = false)
 				MultipartFile sub) {
@@ -186,6 +189,11 @@ public class ApiController {
 			if (sub != null)
 				sub.transferTo(inSub = FileUtil.matchFileName(inFolder, sub.getOriginalFilename()));
 
+			// if music exists then move it to input folder
+			File inMusic = null;
+			if (music != null)
+				music.transferTo(inMusic = FileUtil.matchFileName(inFolder, music.getOriginalFilename()));
+
 			// Check if track and artist exists
 			if (title == null || artist == null)
 				throw new Exception("Can't get information about music name and music artist!");
@@ -194,7 +202,7 @@ public class ApiController {
 			System.out.println("Request sub image track: "+title+" artist: "+artist);
 
 			// Create and return a task
-			Task<VideoTaskResult> task = videoSubService.createSubVideoFromMusic(title, artist, inFile == null ? null : inFile.getName(), inSub == null ? null : inSub.getName());
+			Task<VideoTaskResult> task = videoSubService.createSubVideoFromMusic(title, artist, inFile == null ? null : inFile.getName(), inMusic == null ? null : inMusic.getName(), inSub == null ? null : inSub.getName());
 
 			// 
 			System.out.println("   return task id="+task.getId());

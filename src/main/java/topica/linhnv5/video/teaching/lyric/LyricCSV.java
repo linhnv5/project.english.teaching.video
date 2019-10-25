@@ -19,8 +19,8 @@ public class LyricCSV {
 	@CsvBindByName(column = "mark")
 	private String mark;
 
-	@CsvBindByName(column = "markInf")
-	private String markInfi;
+	@CsvBindByName(column = "markDictionary")
+	private String markDictionary;
 
 	@CsvBindByName(column = "markType")
 	private String type;
@@ -104,15 +104,15 @@ public class LyricCSV {
 	/**
 	 * @return the markInfi
 	 */
-	public String getMarkInfi() {
-		return markInfi;
+	public String getMarkDictionary() {
+		return markDictionary;
 	}
 
 	/**
-	 * @param markInfi the markInfi to set
+	 * @param markDictionary the markInfi to set
 	 */
-	public void setMarkInfi(String markInfi) {
-		this.markInfi = markInfi;
+	public void setMarkDictionary(String markDictionary) {
+		this.markDictionary = markDictionary;
 	}
 
 	/**

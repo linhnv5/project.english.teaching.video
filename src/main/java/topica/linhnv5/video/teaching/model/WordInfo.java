@@ -9,43 +9,61 @@ import java.util.List;
  */
 public class WordInfo {
 
-	private String infi;
-
+	/**
+	 * The word to search
+	 */
 	private String word;
+
+	/**
+	 * Infinity word in dictionary
+	 */
+	private String wordDictionary;
+
+	/**
+	 * Type of word
+	 */
 	private String type;
-	private String pronoun;
+
+	/**
+	 * Word API
+	 */
+	private String api;
+
+	/**
+	 * Word translate
+	 */
 	private String trans;
 
-	public WordInfo(String infi) {
-		this.infi = infi;
+	public WordInfo(String word) {
+		this.word = word;
 	}
 
 	/**
 	 * @return the infi
-	 */
-	public String getInfi() {
-		return infi;
-	}
-
-	/**
-	 * @param infi the infi to set
-	 */
-	public void setInfi(String infi) {
-		this.infi = infi;
-	}
-
-	/**
-	 * @return the word
 	 */
 	public String getWord() {
 		return word;
 	}
 
 	/**
-	 * @param word the word to set
+	 * @param word the infi to set
 	 */
 	public void setWord(String word) {
 		this.word = word;
+	}
+
+	/**
+	 * @return the word
+	 */
+	public String getWordDictionary() {
+		return wordDictionary;
+	}
+
+	/**
+	 * @param word the word to set
+	 */
+	public void setWordDictionary(String word) {
+		this.wordDictionary = word;
 	}
 
 	/**
@@ -65,15 +83,15 @@ public class WordInfo {
 	/**
 	 * @return the pronoun
 	 */
-	public String getPronoun() {
-		return pronoun;
+	public String getAPI() {
+		return api;
 	}
 
 	/**
-	 * @param pronoun the pronoun to set
+	 * @param api the pronoun to set
 	 */
-	public void setPronoun(String pronoun) {
-		this.pronoun = pronoun;
+	public void setAPI(String api) {
+		this.api = api;
 	}
 
 	/**
@@ -114,7 +132,7 @@ public class WordInfo {
 	public void setTrans(String trans) {
 		this.trans = trans;
 	}
-
+/*
 	public String getTypeShort() {
 		if (this.type == null)
 			return null;
@@ -129,5 +147,5 @@ public class WordInfo {
 				: this.type.equals("interjection") ? "interj"
 				: "";
 	}
-
+*/
 }

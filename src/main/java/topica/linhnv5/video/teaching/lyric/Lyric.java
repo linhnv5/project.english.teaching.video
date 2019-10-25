@@ -90,7 +90,7 @@ public class Lyric {
 	public String getLyric() {
 		StringBuilder buff = new StringBuilder();
 		buff.append(this.mark != null ? 
-				this.lyric.replaceAll(this.mark.getInfi(), "<b><font color=\"yellow\">"+this.mark.getInfi()+"</font></b>")
+				this.lyric.replaceAll(this.mark.getWord(), "<b><font color=\"yellow\">"+this.mark.getWord()+"</font></b>")
 				: this.lyric);
 		if (this.lyricTrans != null)
 			buff.append("\n").append(this.lyricTrans);
@@ -101,7 +101,7 @@ public class Lyric {
 	 * Get the source lyric without trans and mark
 	 * @return the source lyric
 	 */
-	public String getSourceLyric() {
+	String getSourceLyric() {
 		return this.lyric;
 	}
 

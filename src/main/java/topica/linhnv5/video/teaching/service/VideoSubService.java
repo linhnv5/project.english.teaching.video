@@ -27,7 +27,7 @@ public interface VideoSubService {
 	 * @return       Task info of create mp3
 	 * @throws VideoSubException
 	 */
-	public Task<VideoTaskResult> createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputSubFileName) throws VideoSubException;
+	public Task<VideoTaskResult> createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputMusicFileName, String inputSubFileName) throws VideoSubException;
 
 	/**
 	 * Input chart name, artist name, dowload subtitle
