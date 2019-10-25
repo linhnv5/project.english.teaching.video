@@ -179,6 +179,10 @@ public class ApiController {
 		TaskResponse response = null;
 
 		try {
+			// Check if track and artist exists
+			if ((music == null || sub == null) && (title == null || artist == null))
+				throw new Exception("Can't get information about music name and music artist!");
+
 			// Check request
 			File inFile = null;
 			if (background != null)
@@ -193,10 +197,6 @@ public class ApiController {
 			File inMusic = null;
 			if (music != null)
 				music.transferTo(inMusic = FileUtil.matchFileName(inFolder, music.getOriginalFilename()));
-
-			// Check if track and artist exists
-			if (title == null || artist == null)
-				throw new Exception("Can't get information about music name and music artist!");
 
 			// Print the track name and artist name
 			System.out.println("Request sub image track: "+title+" artist: "+artist);
