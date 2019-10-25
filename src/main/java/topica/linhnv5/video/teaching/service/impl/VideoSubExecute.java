@@ -125,7 +125,7 @@ public class VideoSubExecute {
 	 */
 	private String drawWordInfo(WordInfo info, double from, double to, int x, int y) {
 		// Color
-		String wordColor = "yellow", boxColor = "black";
+		String wordColor = "yellow", dicColor = "white", boxColor = "black";
 
 		// Capacity and maxw
 		float boxCapacity = 0.5F; int maxw = 20;
@@ -145,15 +145,15 @@ public class VideoSubExecute {
 		StringBuilder buff = new StringBuilder(drawText(info.getWordDictionary(), from, to, x+xt, y+yt, wordColor, textSize*2)); h += textSize + 5;
 
 		if (info.getType() != null && !info.getType().equals("")) {
-			buff.append(drawBox(from, to, x+xt, y+yt+h+5, info.getType().length() * textW, textSize, wordColor, 1.0F, 2));
-			buff.append(drawText(info.getType(), from, to, x+xt+5, y+yt+h+7, wordColor, textSize));
+			buff.append(drawBox(from, to, x+xt, y+yt+h+5, info.getType().length() * textW, textSize, dicColor, 1.0F, 2));
+			buff.append(drawText(info.getType(), from, to, x+xt+5, y+yt+h+7, dicColor, textSize));
 			h += textSize + 10;
 			if (info.getType().length()*textW > w)
 				w = info.getType().length()*textW;
 		}
 
 		if (info.getAPI() != null && !info.getAPI().equals("")) {
-			buff.append(drawText(info.getAPI(), from, to, x+xt, y+yt+h, wordColor, textSize));
+			buff.append(drawText(info.getAPI(), from, to, x+xt, y+yt+h, dicColor, textSize));
 			h += textSize;
 			if (info.getAPI().length()*textW > w)
 				w = info.getAPI().length()*textW;
@@ -163,7 +163,7 @@ public class VideoSubExecute {
 			String[] trans = info.getTrans(maxw);
 
 			for (String tran : trans) {
-				buff.append(drawText(tran, from, to, x+xt, y+yt+h, wordColor, textSize));
+				buff.append(drawText(tran, from, to, x+xt, y+yt+h, dicColor, textSize));
 				h += textSize;
 				if (info.getTrans().length()*textW > w)
 					w = info.getTrans().length()*textW;
@@ -240,7 +240,9 @@ public class VideoSubExecute {
 
 				// Make filter
 				StringBuilder vfilter = new StringBuilder("scale=640:-1[inscale];")
-										.append("[inscale]subtitles=\'input/"+sub.getName()+"\'");
+										.append("[inscale]subtitles=\'input/"+sub.getName()+"\'")
+										.append(":force_style='OutlineColour=&H80000000,BorderStyle=3,Outline=1,Shadow=1,MarginV=20'")
+										;
 
 				for (Lyric l : songLyric.getSong()) {
 					if (l.getMark() != null)
@@ -453,7 +455,11 @@ public class VideoSubExecute {
 				if (mp4)
 					vfilter.append(",loop=-1:start=0:size=").append(stream2.nb_frames);
 
-				vfilter.append("[in];").append("[in]subtitles='input/"+sub.getName()+"'");
+				vfilter
+					.append("[in];")
+					.append("[in]subtitles='input/"+sub.getName()+"'")
+					.append(":force_style='OutlineColour=&H80000000,BorderStyle=3,Outline=1,Shadow=1,MarginV=20'")
+					;
 
 				for (Lyric l : songLyric.getSong()) {
 					if (l.getMark() != null)

@@ -92,8 +92,13 @@ public class Lyric {
 		buff.append(this.mark != null ? 
 				this.lyric.replaceAll(this.mark.getWord(), "<b><font color=\"yellow\">"+this.mark.getWord()+"</font></b>")
 				: this.lyric);
-		if (this.lyricTrans != null)
-			buff.append("\n").append(this.lyricTrans);
+		if (this.lyricTrans != null) {
+			buff.append("\n")
+				.append("<font size=10>")
+				.append(this.lyricTrans)
+				.append("</font>")
+				;
+		}
 		return buff.toString();
 	}
 
