@@ -596,6 +596,7 @@ public class VideoSubExecute {
 
 				// Do ffprobe for music
 				FFmpegProbeResult probeResult  = ffprobe.probe(input.getPath());
+				FFmpegStream stream = probeResult.getStreams().get(0);
 
 				// Do ffprobe for back
 				FFmpegProbeResult probeResult2 = ffprobe.probe(back.getPath());
@@ -617,9 +618,6 @@ public class VideoSubExecute {
 				// Make filter
 				StringBuilder vfilter = new StringBuilder("[0:v]scale=").append(width).append(":").append(height);
 
-				if (mp4)
-					vfilter.append(",loop=-1:start=0:size=").append(stream2.nb_frames);
-
 				vfilter
 					.append("[in];[in]")
 					.append(addSubtitle(sub));
@@ -633,12 +631,9 @@ public class VideoSubExecute {
 
 				builder.setComplexFilter(vfilter.toString());
 
-				int frames = (int) (probeResult.getFormat().duration*30);
-
-				if (mp4) {
-					if (frames % stream2.nb_frames != 0)
-						frames = (int) ((frames / stream2.nb_frames+1)*stream2.nb_frames);
-				} else
+				if (mp4)
+					builder.addExtraArgs("-stream_loop", "-1");
+				else
 					builder.addExtraArgs("-loop", "1");
 
 				builder
@@ -655,7 +650,7 @@ public class VideoSubExecute {
 					.addExtraArgs("-map", "1:a")
 					.addExtraArgs("-map_metadata", "1")
 //					.addExtraArgs("-shortest")
-					.addExtraArgs("-frames:v", String.valueOf(frames))
+					.addExtraArgs("-frames:v", String.valueOf((int)Math.floor(stream.duration*30)))
 					.done();
 
 				// create ffmpeg executor
