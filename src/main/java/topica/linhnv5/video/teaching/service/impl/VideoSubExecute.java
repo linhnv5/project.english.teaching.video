@@ -633,7 +633,12 @@ public class VideoSubExecute {
 
 				builder.setComplexFilter(vfilter.toString());
 
-				if (!mp4)
+				int frames = (int) (probeResult.getFormat().duration*30);
+
+				if (mp4) {
+					if (frames % stream2.nb_frames != 0)
+						frames = (int) ((frames / stream2.nb_frames+1)*stream2.nb_frames);
+				} else
 					builder.addExtraArgs("-loop", "1");
 
 				builder
@@ -649,8 +654,8 @@ public class VideoSubExecute {
 					.addExtraArgs("-map", "0:v")
 					.addExtraArgs("-map", "1:a")
 					.addExtraArgs("-map_metadata", "1")
-					.addExtraArgs("-shortest")
-//					.addExtraArgs("-frames:v", String.valueOf((int)Math.floor(probeResult.getFormat().duration*30)))
+//					.addExtraArgs("-shortest")
+					.addExtraArgs("-frames:v", String.valueOf(frames))
 					.done();
 
 				// create ffmpeg executor
