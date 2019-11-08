@@ -74,7 +74,7 @@ public class Lyric {
 	public Lyric(Lyric inLyric) {
 		this.from  = inLyric.getFromTimestamp();
 		this.to    = inLyric.getToTimestamp();
-		this.lyric = inLyric.getLyric();
+		this.lyric = inLyric.getSourceLyric();
 	}
 
 	// ACCESSOR
@@ -87,10 +87,10 @@ public class Lyric {
 	 * @author IntelleBitnify
 	 * @version 1.0 (10/6/2019)
 	 ************************************************************/
-	public String getLyric() {
+	public String getLyric(String markColor) {
 		StringBuilder buff = new StringBuilder();
 		buff.append(this.mark != null ? 
-				this.lyric.replaceAll(this.mark.getWord(), "<b><font color=\"yellow\">"+this.mark.getWord()+"</font></b>")
+				this.lyric.replaceAll(this.mark.getWord(), "<b><font color=\""+markColor+"\">"+this.mark.getWord()+"</font></b>")
 				: this.lyric);
 		if (this.lyricTrans != null) {
 			buff.append("\n")
@@ -106,7 +106,7 @@ public class Lyric {
 	 * Get the source lyric without trans and mark
 	 * @return the source lyric
 	 */
-	String getSourceLyric() {
+	public String getSourceLyric() {
 		return this.lyric;
 	}
 
@@ -181,7 +181,7 @@ public class Lyric {
 			inLyric = (Lyric) inObject;
 			if (this.from == inLyric.getFromTimestamp()) // Check equality of timestamp
 			{
-				if (this.lyric.equals(inLyric.getLyric())) // Check equality of lyric
+				if (this.lyric.equals(inLyric.lyric)) // Check equality of lyric
 				{
 					isEqual = true;
 				}

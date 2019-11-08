@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiModelProperty;
  * Result for api get task status
  * @author ljnk975
  */
-public class TaskInfoResult {
+public class TaskInfo {
 
 	/**
 	 * Status of task
@@ -32,10 +32,10 @@ public class TaskInfoResult {
 	@ApiModelProperty("Consuming time of this task")
 	private long timeConsume;
 
-	public TaskInfoResult() {
+	public TaskInfo() {
 	}
 	
-	public TaskInfoResult(String status, String error, int progress) {
+	public TaskInfo(String status, String error, int progress) {
 		this.status = status;
 		this.error = error;
 		this.progress = progress;

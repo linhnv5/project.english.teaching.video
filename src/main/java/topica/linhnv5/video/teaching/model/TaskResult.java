@@ -6,7 +6,7 @@ import java.io.File;
  * The result of subbing task
  * @author ljnk975
  */
-public class VideoTaskResult {
+public class TaskResult {
 
 	/**
 	 * The output file
@@ -18,7 +18,7 @@ public class VideoTaskResult {
 	 */
 	private Exception exception;
 
-	public VideoTaskResult() {
+	public TaskResult() {
 	}
 
 	/**

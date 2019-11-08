@@ -1,5 +1,6 @@
 package topica.linhnv5.video.teaching.model;
 
+import java.awt.FontMetrics;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,7 +105,7 @@ public class WordInfo {
 	/**
 	 * @return the trans
 	 */
-	public String[] getTrans(int maxw) {
+	public String[] getTrans(int maxw, FontMetrics metric) {
 		if (trans == null)
 			return null;
 
@@ -115,10 +116,10 @@ public class WordInfo {
 		for (int i = 0; i < arTrans.length; i++) {
 			if (buff.length() > 0)
 				buff.append(" ");
-			buff.append(arTrans[i]);
-			if (buff.length() > maxw) {
+			if (metric.stringWidth(buff.toString()+arTrans[i]) > maxw) {
 				list.add(buff.toString()); buff.setLength(0);
 			}
+			buff.append(arTrans[i]);
 		}
 		if (buff.length() > 0)
 			list.add(buff.toString());
@@ -132,7 +133,7 @@ public class WordInfo {
 	public void setTrans(String trans) {
 		this.trans = trans;
 	}
-/*
+
 	public String getTypeShort() {
 		if (this.type == null)
 			return null;
@@ -147,5 +148,5 @@ public class WordInfo {
 				: this.type.equals("interjection") ? "interj"
 				: "";
 	}
-*/
+
 }

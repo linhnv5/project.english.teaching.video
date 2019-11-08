@@ -1,19 +1,10 @@
 package topica.linhnv5.video.teaching.zing;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -24,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 
+import topica.linhnv5.video.teaching.util.HttpUtil;
 import topica.linhnv5.video.teaching.zing.model.SearchItem;
 import topica.linhnv5.video.teaching.zing.model.SearchResult;
 import topica.linhnv5.video.teaching.zing.model.StreamResult;
@@ -37,54 +29,21 @@ public class ZingMp3 {
 	@Value("${zing.mp3.seckey}")
 	private String secretKey;
 
-	public static String sendRequest(String requestString) throws ZingServiceException {
-//		System.out.println("Request: "+requestString);
+	@Value("${zing.mp3.cookie}")
+	private String cookie;
 
-		StringBuffer buffer = new StringBuffer();
-
+	public String sendRequest(String requestString) throws ZingServiceException {
 		try {
-			URL url = new URL(requestString);
-
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-			InputStream is = "gzip".equals(conn.getContentEncoding()) ? new GZIPInputStream(conn.getInputStream()) : conn.getInputStream();
-
-			BufferedReader in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-			String str;
-
-			while ((str = in.readLine()) != null)
-				buffer.append(str);
-
-			in.close();
-		} catch (MalformedURLException e) {
-			throw new ZingServiceException(e.getMessage());
-		} catch (IOException e) {
+			return HttpUtil.sendRequest(requestString, cookie);
+		} catch (Exception e) {
 			throw new ZingServiceException(e.getMessage());
 		}
-
-		return buffer.toString();
 	}
 
-	public static byte[] sendRequestBinary(String requestString) throws ZingServiceException {
-//		System.out.println("Request: "+requestString);
-
+	public byte[] sendRequestBinary(String requestString) throws ZingServiceException {
 		try {
-			URL url = new URL(requestString);
-
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-			InputStream is = conn.getInputStream();
-
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			byte[] ab = new byte[1024];
-
-			int lent;
-			while ((lent = is.read(ab)) > 0)
-				bos.write(ab, 0, lent);
-
-			return bos.toByteArray();
-		} catch (MalformedURLException e) {
-			throw new ZingServiceException(e.getMessage());
-		} catch (IOException e) {
+			return HttpUtil.sendRequestBinary(requestString, cookie);
+		} catch (Exception e) {
 			throw new ZingServiceException(e.getMessage());
 		}
 	}

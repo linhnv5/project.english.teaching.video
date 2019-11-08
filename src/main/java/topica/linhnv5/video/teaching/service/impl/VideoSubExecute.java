@@ -1,5 +1,12 @@
 package topica.linhnv5.video.teaching.service.impl;
 
+import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Composite;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -10,6 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import javax.imageio.ImageIO;
 import javax.servlet.ServletContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +41,7 @@ import net.bramp.ffmpeg.progress.ProgressListener;
 import topica.linhnv5.video.teaching.lyric.Lyric;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
-import topica.linhnv5.video.teaching.model.VideoTaskResult;
+import topica.linhnv5.video.teaching.model.TaskResult;
 import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.model.WordInfo;
 import topica.linhnv5.video.teaching.service.DictionaryService;
@@ -51,14 +59,14 @@ public class VideoSubExecute {
 	@Autowired
 	private ZingMp3 zingMp3;
 
+	@Value("${video.teaching.workingfolder}")
+	private String workingFolder;
+
 	@Value("${video.teaching.infolder}")
 	private String inFolder;
 
 	@Value("${video.teaching.outfolder}")
 	private String outFolder;
-
-	@Value("${video.teaching.fontfile}")
-	private String fontFile;
 
 	@Autowired
 	private FFprobe ffprobe;
@@ -72,19 +80,7 @@ public class VideoSubExecute {
 	@Value("${video.teaching.text.time}")
 	private int textTime;
 
-	/**
-	 * Draw a box to video
-	 * @param from
-	 * @param to
-	 * @param x
-	 * @param y
-	 * @param w
-	 * @param h
-	 * @param color
-	 * @param opacity
-	 * @param t
-	 * @return
-	 */
+	/*
 	private String drawBox(double from, double to, int x, int y, int w, int h, String color, float opacity, int t) {
 		return new StringBuilder(",drawbox=").append(x).append(":").append(y).append(":").append(w).append(":").append(h)
 				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
@@ -93,18 +89,7 @@ public class VideoSubExecute {
 				.toString();
 	}
 
-	/**
-	 * Draw a text to video
-	 * @param text
-	 * @param from
-	 * @param to
-	 * @param x
-	 * @param y
-	 * @param color
-	 * @param size
-	 * @return
-	 */
-	private String drawText(String text, double from, double to, int x, int y, String color, long size) {
+	private String drawText(String text, double from, double to, int x, int y, String color, int size) {
 		StringBuilder buff = new StringBuilder(",drawtext=text='").append(text.replaceAll("\'", "\'\'").replaceAll("\"", "\"\"")).append("'")
 				.append(":x=").append(x).append(":y=").append(y)
 				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
@@ -112,6 +97,146 @@ public class VideoSubExecute {
 				.append(":fontcolor=").append(color)
 				.append(":fontsize=").append(size);
 		return buff.toString();
+	}
+	*/
+
+	private String addLogo(int width, int height) {
+		return new StringBuilder()
+				.append("[in];")
+				.append("movie=image/logo.jpg,scale=").append(width/5).append(":-1[watermark];")
+				.append("[in][watermark]overlay=10:10")
+				.toString();
+	}
+
+	private String addSubtitle(File sub) {
+		return new StringBuilder()
+				.append("subtitles=\'input/"+sub.getName()+"\'")
+				.append(":force_style='BorderStyle=4,BackColour=&H88000000,OutlineColour=&H88000000,Outline=1,Shadow=1,MarginV=20'")
+				.toString();
+	}
+
+	private File drawWordInfoToImage(WordInfo info, float scale, File tmpDir) throws Exception {
+		// Color
+		Color wordColor = Color.YELLOW, dicColor = Color.WHITE,
+				borderColor = Color.WHITE, boxColor = new Color(0, 0, 0, 0x88);
+
+		// Capacity and maxw
+		int maxw = (int) (200*scale), maxh = (int) (200*scale);
+
+		// text font size
+		float textSize = 15*scale;
+
+		// x, y draw Text
+		int xt = 5, yt = 5;
+
+		// W, H of box
+		int w = 0, h = 0;
+
+		// Image
+		BufferedImage img = new BufferedImage(maxw, maxh, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = (Graphics2D) img.getGraphics();
+
+		// fill transparent
+		Composite oldComp = g.getComposite();
+		g.setComposite(AlphaComposite.Clear);
+		g.fillRect(0, 0, maxw, maxh);
+		g.setComposite(oldComp);
+
+		// Font
+	    Font dynamicFont32Pt = new Font(null, Font.BOLD, (int)(textSize*2));
+	    Font dynamicFont16Pt = new Font(null, Font.PLAIN, (int)textSize);
+
+	    // word dictionary
+	    g.setFont(dynamicFont32Pt);
+	    g.setColor(wordColor);
+	    g.drawString(info.getWordDictionary(), xt, yt+g.getFontMetrics().getAscent());
+
+	    w = Math.max(w, g.getFontMetrics().stringWidth(info.getWordDictionary()));
+	    h += g.getFontMetrics().getHeight()+5;
+
+	    // word type and api
+	    g.setFont(dynamicFont16Pt);
+
+		int tw = 0;
+		int th = 0;
+
+		// api
+		g.setColor(dicColor);
+		if (info.getAPI() != null && !info.getAPI().equals("")) {
+			int tw2 = g.getFontMetrics().stringWidth(info.getAPI());
+			int th2 = g.getFontMetrics().getHeight();
+
+			g.setColor(borderColor);
+			g.setStroke(new BasicStroke(2f));
+			g.drawRoundRect(xt, yt+h, tw2+10, th2+10, 5, 5);
+
+			g.setColor(dicColor);
+			g.drawString(info.getAPI(), xt+5, yt+h+5+g.getFontMetrics().getAscent());
+
+			tw = tw2+15;
+			th = th2+15;
+		}
+
+		// word type
+		if (info.getTypeShort() != null && !info.getTypeShort().equals("")) {
+			int tw2 = g.getFontMetrics().stringWidth(info.getTypeShort());
+			int th2 = g.getFontMetrics().getHeight();
+
+			g.setColor(borderColor);
+			g.setStroke(new BasicStroke(2f));
+			g.drawOval(xt+tw, yt+h, tw2+10, th2+10);
+
+			g.setColor(dicColor);
+			g.drawString(info.getTypeShort(), xt+tw+5, yt+h+5+g.getFontMetrics().getAscent());
+
+			tw += tw2+15;
+			th = th2+15;
+		}
+
+	    w = Math.max(w, tw);
+	    h += th;
+
+	    // trans
+		if (info.getTrans() != null && !info.getTrans().equals("")) {
+			String[] trans = info.getTrans(maxw, g.getFontMetrics());
+
+			for (String tran : trans) {
+				g.drawString(tran, xt, yt+h+g.getFontMetrics().getAscent());
+
+			    w = Math.max(w, g.getFontMetrics().stringWidth(tran));
+			    h += g.getFontMetrics().getHeight()+2;
+			}
+		}
+
+		// final w, h
+		w = xt*2 + w;
+		h = yt*2 + h;
+
+		// Image Out
+		BufferedImage img2 = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+
+		g = (Graphics2D) img2.getGraphics();
+
+		// draw background
+		g.setColor(boxColor);
+		g.fillRoundRect(0, 0, w, h, w/10, h/10);
+
+		// draw image
+		g.drawImage(img, 0, 0, null);
+
+		// draw border
+//		g.setColor(borderColor);
+//		g.setStroke(new BasicStroke(4f));
+//		g.drawRoundRect(0, 0, w+xt*2, h+xt*2, w/10, h/10);
+
+		// Write image
+		File f = FileUtil.matchFileName(tmpDir.getPath(), info.getWordDictionary()+".png");
+
+		System.out.println("Write "+f.getPath());
+
+		ImageIO.write(img2, "PNG", f);
+
+		return f;
 	}
 
 	/**
@@ -122,8 +247,22 @@ public class VideoSubExecute {
 	 * @param x
 	 * @param y
 	 * @return
+	 * @throws Exception 
 	 */
-	private String drawWordInfo(WordInfo info, double from, double to, int x, int y) {
+	private String drawWordInfo(WordInfo info, double from, double to, int x, int y, float scale, File tmpDir) throws Exception {
+		File wordImage = drawWordInfoToImage(info, scale, tmpDir);
+
+		if (to - from < textTime)
+			to = from + textTime;
+
+		return new StringBuilder()
+				.append("[in];")
+				.append("movie=input/").append(tmpDir.getName()).append("/").append(wordImage.getName()).append("[word];")
+				.append("[in][word]overlay=").append(x).append(":").append(y)
+				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
+				.toString();
+
+		/*
 		// Color
 		String wordColor = "yellow", dicColor = "white", boxColor = "black";
 
@@ -131,16 +270,13 @@ public class VideoSubExecute {
 		float boxCapacity = 0.5F; int maxw = 20;
 
 		// text font size
-		int textSize = 15, textW = 10;
+		int textSize = (int) (15*scale), textW = 10;
 
 		// x, y draw Text
 		int xt = 20, yt = 20;
 
 		// W, H of box
 		int w = info.getWordDictionary().length()*15, h = 0;
-
-		if (to - from < textTime)
-			to = from + textTime;
 
 		StringBuilder buff = new StringBuilder(drawText(info.getWordDictionary(), from, to, x+xt, y+yt, wordColor, textSize*2)); h += textSize + 5;
 
@@ -173,19 +309,39 @@ public class VideoSubExecute {
 		return new StringBuilder(drawBox(from, to, x, y, w+xt*2, h+yt*2, boxColor, boxCapacity, -1))
 				.append(buff.toString())
 				.toString();
+		*/
+	}
+
+	private void checkInOutFolder() {
+		FileUtil.checkAndMKDir(inFolder);
+		FileUtil.checkAndMKDir(outFolder);
+	}
+
+	private String srtLyric(SongLyric songLyric) throws Exception {
+		return LyricConverter.writeSRT(songLyric, "red");
 	}
 
 	@Async("threadPoolExecutor")
-	public Future<VideoTaskResult> doAddSubToVideo(String track, String artist, String inputFileName, String inputSubName, Task<VideoTaskResult> task) {
-		VideoTaskResult result = new VideoTaskResult();
+	public Future<TaskResult> doAddSubToVideo(String track, String artist, String inputFileName, String inputSubName, Task<TaskResult> task) {
+		TaskResult result = new TaskResult();
 
 		// Input and output file
-		File input  = new File(inFolder  + inputFileName);
-		File output = new File(outFolder + inputFileName);
-
-		File sub    = new File(input.getPath()+".srt");
+		File input, sub, tmpDir, output;
 
 		try {
+			// Check input and output folder
+			checkInOutFolder();
+
+			// Input and output file
+			input  = new File(inFolder  + inputFileName);
+			output = new File(outFolder + inputFileName);
+
+			// Subtitle file
+			sub    = new File(input.getPath()+".srt");
+
+			// Tmp dir
+			tmpDir = new File(input.getPath()+".tmp");
+
 			// Get the lyric
 			SongLyric songLyric = null;
 
@@ -204,7 +360,7 @@ public class VideoSubExecute {
 			}
 
 			// Convert it to srt
-			String lyric = LyricConverter.writeSRT(songLyric);
+			String lyric = srtLyric(songLyric);
 
 			// Write subtitle to file
 			FileOutputStream fos = null;
@@ -235,24 +391,21 @@ public class VideoSubExecute {
 				//
 				System.out.println("Do FFmpeg");
 
-				int width  = 640;
-				int height = stream.height*640/stream.width;
+				int width  = stream.width*2/2;
+				int height = stream.height*2/2;
+
+				float scale = (float)width / 640;
 
 				// Make filter
-				StringBuilder vfilter = new StringBuilder("scale=640:-1[inscale];")
-										.append("[inscale]subtitles=\'input/"+sub.getName()+"\'")
-										.append(":force_style='OutlineColour=&H80000000,BorderStyle=3,Outline=1,Shadow=1,MarginV=20'")
-										;
+				StringBuilder vfilter = new StringBuilder("scale=").append(width).append(":").append(height).append("[in];[in]")
+										.append(addSubtitle(sub));
 
 				for (Lyric l : songLyric.getSong()) {
 					if (l.getMark() != null)
-						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width/10, height/2-40));
+						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width/10, height/2-40, scale, tmpDir));
 				}
 
-				vfilter.append("[in];")
-						.append("movie=input/image/topica.png,scale=125:-1[watermark];")
-						.append("[in][watermark]overlay=10:10");
-
+				vfilter.append(addLogo(width, height));
 
 				// Do ffmpeg
 				FFmpegBuilder builder = ffmpeg.builder()
@@ -315,24 +468,27 @@ public class VideoSubExecute {
 			result.setException(e);
 		}
 
-		return new AsyncResult<VideoTaskResult>(result);
+		return new AsyncResult<TaskResult>(result);
 	}
 
 	@Async("threadPoolExecutor")
-	public Future<VideoTaskResult> doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputMusicFileName, String inputSubName, Task<VideoTaskResult> task) {
-		VideoTaskResult result = new VideoTaskResult();
-
-		// input name
-		String inputFileName = track.replaceAll(" ", "_")+"("+artist.replaceAll(" ", "_")+")";
+	public Future<TaskResult> doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputMusicFileName, String inputSubName, Task<TaskResult> task) {
+		TaskResult result = new TaskResult();
 
 		// Input and output file
-		File input, back, sub, output;
+		File input, back, sub, tmpDir, output;
 
 		try {
+			// Check in out folder
+			checkInOutFolder();
+
+			// input name
+			String inputFileName = track.replaceAll(" ", "_")+"("+artist.replaceAll(" ", "_")+")";
+
 			if (inputBackName != null)
 				back = new File(inFolder + inputBackName);
 			else
-				back = new File(inFolder + "image" + File.separator + "back" + ThreadLocalRandom.current().nextInt(5) + ".jpg");
+				back = new File(workingFolder + "image" + File.separator + "back" + ThreadLocalRandom.current().nextInt(5) + ".jpg");
 
 			// back mp4 ?
 			boolean mp4 = !servletContext.getMimeType(back.getName()).startsWith("image");
@@ -380,7 +536,7 @@ public class VideoSubExecute {
 
 				try {
 					// Get stream data
-					byte[] mp3Data = ZingMp3.sendRequestBinary("http:"+link);
+					byte[] mp3Data = zingMp3.sendRequestBinary("http:"+link);
 
 					// Write mp3 to file
 					fos = new FileOutputStream(input);
@@ -400,6 +556,9 @@ public class VideoSubExecute {
 			// sub file 
 			sub = new File(input.getPath()+".srt");
 
+			// Tmp dir
+			tmpDir = new File(input.getPath()+".tmp");
+
 			// output file
 			output = new File(outFolder + input.getName().substring(0, input.getName().length()-4)+".mp4");
 
@@ -412,7 +571,7 @@ public class VideoSubExecute {
 				songLyric = doGetSubtitle(item);
 
 			// Convert it to srt
-			String lyric = LyricConverter.writeSRT(songLyric);
+			String lyric = srtLyric(songLyric);
 
 			// Write subtitle to file
 			FileOutputStream fos = null;
@@ -446,44 +605,38 @@ public class VideoSubExecute {
 				//
 				System.out.println("Do FFmpeg");
 
-				int width  = 640;
-				int height = stream2.height*640/stream2.width;
+				int width  = stream2.width/2*2;
+				int height = stream2.height/2*2;
+
+				float scale = (float)width / 640;
+
+				// Do ffmpeg
+				FFmpegBuilder builder = ffmpeg.builder()
+						.addInput(back.getPath())
+						.addInput(input.getPath());
 
 				// Make filter
-				StringBuilder vfilter = new StringBuilder("[0:v]scale=640:-2");
+				StringBuilder vfilter = new StringBuilder("[0:v]scale=").append(width).append(":").append(height);
 
 				if (mp4)
 					vfilter.append(",loop=-1:start=0:size=").append(stream2.nb_frames);
 
 				vfilter
-					.append("[in];")
-					.append("[in]subtitles='input/"+sub.getName()+"'")
-					.append(":force_style='OutlineColour=&H80000000,BorderStyle=3,Outline=1,Shadow=1,MarginV=20'")
-					;
+					.append("[in];[in]")
+					.append(addSubtitle(sub));
 
 				for (Lyric l : songLyric.getSong()) {
 					if (l.getMark() != null)
-						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width/10, height/2-40));
+						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width/10, height/2-40, scale, tmpDir));
 				}
 
-				vfilter
-					.append("[bg];")
-					.append("movie=input/image/topica.png,scale=125:-1[watermark];")
-					.append("[bg][watermark]overlay=10:10")
-					;
+				vfilter.append(addLogo(width, height));
 
-				// Do ffmpeg
-				FFmpegBuilder builder = ffmpeg.builder()
-					.addInput(back.getPath())
-					.addInput(input.getPath())
-					.setComplexFilter(vfilter.toString())
-					;
+				builder.setComplexFilter(vfilter.toString());
 
 				if (!mp4)
-					builder
-					.addExtraArgs("-loop", "1")
-					;
-				
+					builder.addExtraArgs("-loop", "1");
+
 				builder
 					.overrideOutputFiles(true)
 					.addOutput(output.getPath())
@@ -552,7 +705,7 @@ public class VideoSubExecute {
 			result.setException(e);
 		}
 
-		return new AsyncResult<VideoTaskResult>(result);
+		return new AsyncResult<TaskResult>(result);
 	}
 
 	public SearchItem doGetMatchingTrack(String track, String artist) throws Exception {
@@ -581,7 +734,7 @@ public class VideoSubExecute {
 		SongLyric songLyric;
 
 		try {
-			songLyric = LyricConverter.readLRC(ZingMp3.sendRequest(item.getLyric()));
+			songLyric = LyricConverter.readLRC(zingMp3.sendRequest(item.getLyric()));
 
 			// 
 			System.out.println("Translate Lyric");

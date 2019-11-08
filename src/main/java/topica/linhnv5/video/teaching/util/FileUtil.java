@@ -11,7 +11,12 @@ public class FileUtil {
 	 * @return new File
 	 */
 	public static synchronized File matchFileName(String path, String name) {
+		if (!path.endsWith(File.separator))
+			path = path + File.separator;
+
 		name = name.replaceAll("\'", "").replaceAll(" ", "_");
+
+		checkAndMKDir(path);
 
 		File f;
 		if (!(f = new File(path+name)).exists())
@@ -30,6 +35,16 @@ public class FileUtil {
 		while ((f = new File(path+name+"_"+id+extension)).exists()) id++;
 
 		return f;
+	}
+
+	/**
+	 * Check path if not exists then make new folder
+	 * @param path path of folder to check
+	 */
+	public static synchronized void checkAndMKDir(String path) {
+		File f = new File(path);
+		if (!f.exists())
+			f.mkdirs();
 	}
 
 }
