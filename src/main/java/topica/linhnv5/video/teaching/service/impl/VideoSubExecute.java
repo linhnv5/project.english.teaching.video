@@ -650,7 +650,8 @@ public class VideoSubExecute {
 					.addExtraArgs("-map", "0:v")
 					.addExtraArgs("-map", "1:a")
 					.addExtraArgs("-map_metadata", "1")
-					.addExtraArgs("-frames:v", String.valueOf((int)Math.floor(stream.duration*30)))
+					.addExtraArgs("-shortest", "")
+//					.addExtraArgs("-frames:v", String.valueOf((int)Math.floor(stream.duration*30)))
 					.done();
 
 				// create ffmpeg executor
