@@ -313,6 +313,7 @@ public class ApiController {
 	@ApiResponses({
 		@ApiResponse(code = 200, message = "Return result video"),
 		@ApiResponse(code = 404, message = "TaskID is not found"),
+		@ApiResponse(code = 403, message = "Task result error"),
 		@ApiResponse(code = 204, message = "Task isn't finnished yet")
 	})
 	public ResponseEntity<?> getTaskResult(@RequestParam("id") String id) throws InterruptedException, ExecutionException, FileNotFoundException {
@@ -326,6 +327,10 @@ public class ApiController {
 
 		// get result
 		TaskResult resultTask = task.get();
+
+		// If error
+		if (resultTask.getException() != null)
+			return new ResponseEntity<String>("Task error!", HttpStatus.FORBIDDEN);
 
 		// Return value
 		MediaType mediaType = getMediaTypeForFileName(resultTask.getOutput().getName());

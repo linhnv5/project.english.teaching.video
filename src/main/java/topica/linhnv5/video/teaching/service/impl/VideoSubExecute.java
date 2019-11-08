@@ -103,7 +103,7 @@ public class VideoSubExecute {
 	private String addLogo(int width, int height) {
 		return new StringBuilder()
 				.append("[in];")
-				.append("movie=image/logo.jpg,scale=").append(width/5).append(":-1[watermark];")
+				.append("movie=image/logo.jpg,scale=").append(width/10).append(":-1[watermark];")
 				.append("[in][watermark]overlay=10:10")
 				.toString();
 	}
