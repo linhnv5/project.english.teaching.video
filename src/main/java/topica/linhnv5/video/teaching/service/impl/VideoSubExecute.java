@@ -596,7 +596,6 @@ public class VideoSubExecute {
 
 				// Do ffprobe for music
 				FFmpegProbeResult probeResult  = ffprobe.probe(input.getPath());
-				FFmpegStream stream = probeResult.getStreams().get(0);
 
 				// Do ffprobe for back
 				FFmpegProbeResult probeResult2 = ffprobe.probe(back.getPath());
@@ -650,8 +649,8 @@ public class VideoSubExecute {
 					.addExtraArgs("-map", "0:v")
 					.addExtraArgs("-map", "1:a")
 					.addExtraArgs("-map_metadata", "1")
-					.addExtraArgs("-shortest", "")
-//					.addExtraArgs("-frames:v", String.valueOf((int)Math.floor(stream.duration*30)))
+					.addExtraArgs("-shortest")
+//					.addExtraArgs("-frames:v", String.valueOf((int)Math.floor(probeResult.getFormat().duration*30)))
 					.done();
 
 				// create ffmpeg executor
