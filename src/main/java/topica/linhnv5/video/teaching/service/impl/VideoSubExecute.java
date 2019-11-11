@@ -491,7 +491,7 @@ public class VideoSubExecute {
 		}
 
 		// Save task
-		taskService.saveTask(task);
+		taskService.saveResult(execute);
 	}
 
 	@Async("threadPoolExecutor")
@@ -719,7 +719,7 @@ public class VideoSubExecute {
 		}
 
 		// Save task
-		taskService.saveTask(task);
+		taskService.saveResult(execute);
 	}
 
 	@Autowired

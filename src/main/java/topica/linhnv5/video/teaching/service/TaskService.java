@@ -30,9 +30,9 @@ public interface TaskService {
 	public void addTask(TaskExecute execute);
 
 	/**
-	 * Save task info
-	 * @param task the task
+	 * Save task result
+	 * @param execute the task execute
 	 */
-	public void saveTask(Task task);
+	public void saveResult(TaskExecute execute);
 
 }

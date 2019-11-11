@@ -74,4 +74,14 @@ public class TaskExecute {
 		this.task = task;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		return ((TaskExecute)obj).task.getId().equals(this.task.getId());
+	}
+
+	@Override
+	public int hashCode() {
+		return this.task.getId().hashCode();
+	}
+
 }

@@ -54,8 +54,9 @@ public class TaskServiceImpl implements TaskService {
 	}
 
 	@Override
-	public void saveTask(Task task) {
-		taskRepository.save(task);
+	public void saveResult(TaskExecute execute) {
+		listOfTask.remove(execute);
+		taskRepository.save(execute.getTask());
 	}
 
 }
