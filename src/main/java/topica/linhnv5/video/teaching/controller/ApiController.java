@@ -271,15 +271,11 @@ public class ApiController {
 		if (task == null)
 			return new ResponseEntity<TaskInfo>(HttpStatus.NOT_FOUND);
 
-		TaskInfo result = new TaskInfo();
+		// Result
+		TaskInfo result = new TaskInfo(); TaskExecute execute;
 
 		// Is execute
-		TaskExecute execute = taskService.getTaskExecuteById(id);
-		if (execute != null) {
-			result.setStatus("RUNNING");
-			result.setTimeConsume(System.currentTimeMillis()-execute.getStartMilis());
-			result.setProgress(execute.getProgress());
-		} else if (task.getError() != null || task.getOutputFile() != null) {
+		if (task.getError() != null || task.getOutputFile() != null) {
 			if (task.getError() != null) {
 				result.setStatus("ERROR");
 				result.setError(task.getError());
@@ -287,6 +283,10 @@ public class ApiController {
 				result.setStatus("SUCCESS");
 			result.setProgress(100);
 			result.setTimeConsume(task.getTimeConsume());
+		} else if ((execute = taskService.getTaskExecuteById(id)) != null) {
+			result.setStatus("RUNNING");
+			result.setTimeConsume(System.currentTimeMillis()-execute.getStartMilis());
+			result.setProgress(execute.getProgress());
 		} else {
 			result.setStatus("ERROR");
 			result.setError("Task can't eexecute");

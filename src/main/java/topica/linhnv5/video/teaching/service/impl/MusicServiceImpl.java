@@ -73,7 +73,7 @@ public class MusicServiceImpl implements MusicService {
 		// Check link
 		if (link != null && !link.equals("")) {
 			// File name
-			File input = FileUtil.matchFileName(musicFolder, inputFileName + ".mp3");
+			File input = FileUtil.matchFileName(musicFolder, inputFileName+".mp3");
 
 			System.out.println("Music file: "+input.getPath());
 
