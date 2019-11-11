@@ -1,4 +1,4 @@
-package topica.linhnv5.video.teaching.model;
+package topica.linhnv5.video.teaching.controller.request;
 
 import io.swagger.annotations.ApiParam;
 
@@ -8,7 +8,7 @@ import io.swagger.annotations.ApiParam;
  * 
  * @author ljnk975
  */
-public class TaskRequest {
+public class Music {
 
 	/**
 	 * Name of music video

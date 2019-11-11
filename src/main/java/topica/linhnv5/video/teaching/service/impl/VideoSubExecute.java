@@ -12,7 +12,6 @@ import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -23,7 +22,6 @@ import javax.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
 import com.google.cloud.translate.Translate;
@@ -41,14 +39,14 @@ import net.bramp.ffmpeg.progress.ProgressListener;
 import topica.linhnv5.video.teaching.lyric.Lyric;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
-import topica.linhnv5.video.teaching.model.TaskResult;
+import topica.linhnv5.video.teaching.model.Music;
 import topica.linhnv5.video.teaching.model.Task;
+import topica.linhnv5.video.teaching.model.TaskExecute;
 import topica.linhnv5.video.teaching.model.WordInfo;
 import topica.linhnv5.video.teaching.service.DictionaryService;
+import topica.linhnv5.video.teaching.service.MusicService;
+import topica.linhnv5.video.teaching.service.TaskService;
 import topica.linhnv5.video.teaching.util.FileUtil;
-import topica.linhnv5.video.teaching.zing.ZingMp3;
-import topica.linhnv5.video.teaching.zing.model.SearchItem;
-import topica.linhnv5.video.teaching.zing.model.StreamResult;
 
 @Component
 public class VideoSubExecute {
@@ -56,11 +54,11 @@ public class VideoSubExecute {
 	@Autowired
 	private ServletContext servletContext;
 
-	@Autowired
-	private ZingMp3 zingMp3;
-
 	@Value("${video.teaching.workingfolder}")
 	private String workingFolder;
+
+	@Value("${video.teaching.musicfolder}")
+	private String musicFolder;
 
 	@Value("${video.teaching.infolder}")
 	private String inFolder;
@@ -75,7 +73,13 @@ public class VideoSubExecute {
 	private FFmpeg ffmpeg;
 
 	@Autowired
+	private MusicService musicService;
+
+	@Autowired
 	private DictionaryService dictionary;
+
+	@Autowired
+	private TaskService taskService;
 
 	@Value("${video.teaching.text.time}")
 	private int textTime;
@@ -322,11 +326,15 @@ public class VideoSubExecute {
 	}
 
 	@Async("threadPoolExecutor")
-	public Future<TaskResult> doAddSubToVideo(String track, String artist, String inputFileName, String inputSubName, Task<TaskResult> task) {
-		TaskResult result = new TaskResult();
-
+	public void doAddSubToVideo(String track, String artist, String inputFileName, String inputSubName, TaskExecute execute) {
 		// Input and output file
 		File input, sub, tmpDir, output;
+
+		// The task
+		Task task = execute.getTask();
+
+		// type
+		task.setType(Task.TASK_FROM_VIDEO_TYPE);
 
 		try {
 			// Check input and output folder
@@ -336,11 +344,14 @@ public class VideoSubExecute {
 			input  = new File(inFolder  + inputFileName);
 			output = new File(outFolder + inputFileName);
 
-			// Subtitle file
-			sub    = new File(input.getPath()+".srt");
+			// task input
+			task.setInputFile(input.getName());
 
 			// Tmp dir
-			tmpDir = new File(input.getPath()+".tmp");
+			tmpDir = new File(input.getPath()+"_tmp");
+
+			// sub file
+			sub = new File(inFolder+inputFileName+".srt");
 
 			// Get the lyric
 			SongLyric songLyric = null;
@@ -349,14 +360,22 @@ public class VideoSubExecute {
 			if (inputSubName != null)
 				songLyric = LyricConverter.readCSV(Files.lines(Paths.get(inFolder+inputSubName), StandardCharsets.UTF_8).collect(Collectors.joining("\n")), dictionary);
 			else {
-				//
-				System.out.println("Search MP3");
-
 				// Search item
-				SearchItem item = zingMp3.getMatchingTrack(track, artist);
+				Music music = musicService.getMusic(track, artist);
+
+				// Music not found
+				if (music == null)
+					throw new Exception("Music not found!");
+
+				// Sub not found
+				if (music.getSub() == null)
+					throw new Exception("Sub not found!");
+
+				// Set task music
+				task.setMusic(music);
 
 				// Get the lyric
-				songLyric = doGetSubtitle(item);
+				songLyric = doGetSubtitle(music);
 			}
 
 			// Convert it to srt
@@ -378,6 +397,9 @@ public class VideoSubExecute {
 					}
 				}
 			}
+
+			// task sub
+			task.setSubFile(sub.getName());
 
 			try {
 				//
@@ -428,21 +450,23 @@ public class VideoSubExecute {
 
 					@Override
 					public void progress(Progress progress) {
-						double percentage = progress.out_time_ns / duration_ns;
+						byte percentage = (byte) (progress.out_time_ns * 100 / duration_ns);
 
 						// Set task progress
-						task.setProgress((byte)(percentage * 100));
+						if (execute != null && execute.getProgress() < percentage) {
+							execute.setProgress(percentage);
 
-						// Print out interesting information about the progress
-						System.out.println(String.format(
-							"[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
-							percentage * 100,
-							progress.status,
-							progress.frame,
-							FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
-							progress.fps.doubleValue(),
-							progress.speed
-						));
+							// Print out interesting information about the progress
+							System.out.println(String.format(
+								"[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
+								percentage * 100,
+								progress.status,
+								progress.frame,
+								FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
+								progress.fps.doubleValue(),
+								progress.speed
+							));
+						}
 					}
 				});
 				
@@ -456,119 +480,93 @@ public class VideoSubExecute {
 			//
 			System.out.println("Done! Set output to task");
 
-			// Set full progress
-			task.setStatus(Task.Status.FINISHED);
-			task.setProgress((byte)100);
+			// Set time consuming
+			task.setTimeConsume(System.currentTimeMillis()-execute.getStartMilis());
 
 			// Set the output file
-			result.setOutput(output);
+			task.setOutputFile(output.getName());
 		} catch(Exception e) {
 			e.printStackTrace();
-			task.setStatus(Task.Status.FINISHED);
-			result.setException(e);
+			task.setError(e.toString());
 		}
 
-		return new AsyncResult<TaskResult>(result);
+		// Save task
+		taskService.saveTask(task);
 	}
 
 	@Async("threadPoolExecutor")
-	public Future<TaskResult> doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputMusicFileName, String inputSubName, Task<TaskResult> task) {
-		TaskResult result = new TaskResult();
-
+	public void doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputMusicFileName, String inputSubName, TaskExecute execute) {
 		// Input and output file
 		File input, back, sub, tmpDir, output;
+
+		// The task
+		Task task = execute.getTask();
+
+		// type
+		task.setType(Task.TASK_FROM_VIDEO_TYPE);
 
 		try {
 			// Check in out folder
 			checkInOutFolder();
 
-			// input name
-			String inputFileName = track.replaceAll(" ", "_")+"("+artist.replaceAll(" ", "_")+")";
-
-			if (inputBackName != null)
-				back = new File(inFolder + inputBackName);
-			else
-				back = new File(workingFolder + "image" + File.separator + "back" + ThreadLocalRandom.current().nextInt(5) + ".jpg");
-
-			// back mp4 ?
-			boolean mp4 = !servletContext.getMimeType(back.getName()).startsWith("image");
-
-			// Item mp3
-			SearchItem item = null;
-
-			// search music and lyric
-			if (inputMusicFileName == null || inputSubName == null) {
-				//
-				System.out.println("Search MP3");
-
-				// Search item
-				item = zingMp3.getMatchingTrack(track, artist);
-			}
+			// The music
+			Music music = null;
 
 			// if music file specific
-			if (inputMusicFileName != null)
+			if (inputMusicFileName != null) {
 				input = new File(inFolder+inputMusicFileName);
-			else {
-				input = FileUtil.matchFileName(inFolder, inputFileName + ".mp3");
 
-				// get stream mp3
-				String link;
+				// task input
+				task.setInputFile(input.getName());
+			} else {
+				music = musicService.getMusic(track, artist);
 
-				try {
-					// Get link stream
-					StreamResult streamResult = zingMp3.getStream(item.getId());
+				// check music
+				if (music == null)
+					throw new Exception("Music not found!");
 
-					String link128 = streamResult.getData().getData().getLink128();
-					String link320 = streamResult.getData().getData().getLink320();
+				// Check music file
+				if (music.getFile() == null)
+					throw new Exception("Music stream (mp3) not found or not provide!");
 
-					// Link address
-					link = link320.equals("") ? link128 : link320;
-				} catch(Exception e) {
-					e.printStackTrace();
-					throw new Exception("An error occur when get the mp3 stream info!");
-				}
+				// Set task music
+				task.setMusic(music);
 
-				// Print link
-				System.out.println("Link: "+link);
+				// Input file
+				input = new File(musicFolder+music.getFile());
 
-				// Get file
-				FileOutputStream fos = null;
-
-				try {
-					// Get stream data
-					byte[] mp3Data = zingMp3.sendRequestBinary("http:"+link);
-
-					// Write mp3 to file
-					fos = new FileOutputStream(input);
-					fos.write(mp3Data);
-				} catch(Exception e) {
-					throw new Exception("Could not get mp3 file!");
-				} finally {
-					if (fos != null) {
-						try {
-							fos.close();
-						} catch(Exception e) {
-						}
-					}
-				}
+				// 
+				System.out.println("Music: "+input.getPath());
 			}
 
-			// sub file 
-			sub = new File(input.getPath()+".srt");
-
 			// Tmp dir
-			tmpDir = new File(input.getPath()+".tmp");
+			tmpDir = FileUtil.matchDirName(inFolder, input.getName().substring(0, input.getName().length()-4));
 
-			// output file
-			output = new File(outFolder + input.getName().substring(0, input.getName().length()-4)+".mp4");
+			// sub file
+			sub = new File(inFolder+input.getName()+".srt");
 
 			// If sub file specific
 			SongLyric songLyric = null;
-			
-			if (inputSubName != null)
+
+			if (inputSubName != null) {
 				songLyric = LyricConverter.readCSV(Files.lines(Paths.get(inFolder + inputSubName), StandardCharsets.UTF_8).collect(Collectors.joining("\n")), dictionary);
-			else
-				songLyric = doGetSubtitle(item);
+			} else {
+				if (music == null) {
+					music = musicService.getMusic(track, artist);
+
+					// check music
+					if (music == null)
+						throw new Exception("Music not found!");
+
+					// Check music file
+					if (music.getFile() == null)
+						throw new Exception("Music stream (mp3) not found or not provide!");
+
+					// Set task music
+					task.setMusic(music);
+				}
+				songLyric = doGetSubtitle(music);
+			}
 
 			// Convert it to srt
 			String lyric = srtLyric(songLyric);
@@ -589,6 +587,23 @@ public class VideoSubExecute {
 					}
 				}
 			}
+
+			// Set task lyric
+			task.setSubFile(sub.getName());
+
+			if (inputBackName != null) {
+				back = new File(inFolder + inputBackName);
+
+				// Set task back file
+				task.setBackFile(back.getName());
+			} else
+				back = new File(workingFolder + "image" + File.separator + "back" + ThreadLocalRandom.current().nextInt(5) + ".jpg");
+
+			// back mp4 ?
+			boolean mp4 = !servletContext.getMimeType(back.getName()).startsWith("image");
+
+			// output file
+			output = new File(outFolder+tmpDir.getName()+".mp4");
 
 			try {
 				//
@@ -649,7 +664,6 @@ public class VideoSubExecute {
 					.addExtraArgs("-map", "0:v")
 					.addExtraArgs("-map", "1:a")
 					.addExtraArgs("-map_metadata", "1")
-//					.addExtraArgs("-shortest")
 					.addExtraArgs("-frames:v", String.valueOf((int)Math.floor(stream.duration*30)))
 					.done();
 
@@ -667,8 +681,8 @@ public class VideoSubExecute {
 						byte percentage = (byte) (progress.out_time_ns * 100 / duration_ns);
 
 						// Set task progress
-						if (task.getProgress() < percentage) {
-							task.setProgress(percentage);
+						if (execute != null && execute.getProgress() < percentage) {
+							execute.setProgress(percentage);
 
 							// Print out interesting information about the progress
 							System.out.println(String.format(
@@ -694,47 +708,29 @@ public class VideoSubExecute {
 			//
 			System.out.println("Done! Set output to task");
 
-			// Set full progress
-			task.setStatus(Task.Status.FINISHED);
-			task.setProgress((byte)100);
+			// Set time consuming
+			task.setTimeConsume(System.currentTimeMillis()-execute.getStartMilis());
 
 			// Set the output file
-			result.setOutput(output);
+			task.setOutputFile(output.getName());
 		} catch(Exception e) {
-			task.setStatus(Task.Status.FINISHED);
-			result.setException(e);
+			e.printStackTrace();
+			task.setError(e.toString());
 		}
 
-		return new AsyncResult<TaskResult>(result);
-	}
-
-	public SearchItem doGetMatchingTrack(String track, String artist) throws Exception {
-		return zingMp3.getMatchingTrack(track, artist);
+		// Save task
+		taskService.saveTask(task);
 	}
 
 	@Autowired
 	private Translate translate;
 
-	public SongLyric doGetSubtitle(SearchItem item) throws Exception {
-		// If not found or not have lyric
-		if (item == null || item.getLyric() == "")
-			throw new Exception("Music not found");
-
-		// The ID
-		String id = item.getId();
-
-		// Print the lyric url
-		System.out.println("Id: "+id+" lyric: "+item.getLyric());
-
-		// Check lyric
-		if (item.getLyric() == null)
-			throw new Exception("Could not find the lyric!");
-
+	private SongLyric doGetSubtitle(Music music) throws Exception {
 		// Get the lyric, format lrc
 		SongLyric songLyric;
 
 		try {
-			songLyric = LyricConverter.readLRC(zingMp3.sendRequest(item.getLyric()));
+			songLyric = LyricConverter.readLRC(FileUtil.getFileString(new File(musicFolder+music.getSub())));
 
 			// 
 			System.out.println("Translate Lyric");
@@ -753,6 +749,21 @@ public class VideoSubExecute {
 		}
 
 		return songLyric;
+	}
+
+	public SongLyric doGetSubtitle(String track, String artist) throws Exception {
+		// Search item
+		Music music = musicService.getMusic(track, artist);
+
+		// Music not found
+		if (music == null)
+			throw new Exception("Music not found!");
+
+		// Sub not found
+		if (music.getSub() == null)
+			throw new Exception("Sub not found!");
+
+		return doGetSubtitle(music);
 	}
 
 }

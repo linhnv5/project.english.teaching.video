@@ -1,4 +1,4 @@
-package topica.linhnv5.video.teaching.model;
+package topica.linhnv5.video.teaching.controller.response;
 
 import io.swagger.annotations.ApiModelProperty;
 
@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiModelProperty;
  * Response for subbing video service, include task id, error code, ...
  * @author ljnk975
  */
-public class TaskResponse {
+public class TaskCreate {
 
 	/**
 	 * Status of request, SUCCESS if command return OK, ERROR if there are some error occur
@@ -29,7 +29,7 @@ public class TaskResponse {
 	/**
 	 * Deafult constructor
 	 */
-	public TaskResponse() {
+	public TaskCreate() {
 	}
 
 	/**
@@ -39,7 +39,7 @@ public class TaskResponse {
 	 * @param errMss
 	 * @param task
 	 */
-	public TaskResponse(String status, String errMss, String task) {
+	public TaskCreate(String status, String errMss, String task) {
 		this.status = status;
 		this.mess = errMss;
 		this.task = task;

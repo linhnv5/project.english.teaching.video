@@ -1,4 +1,4 @@
-package topica.linhnv5.video.teaching.model;
+package topica.linhnv5.video.teaching.controller.response;
 
 import io.swagger.annotations.ApiModelProperty;
 

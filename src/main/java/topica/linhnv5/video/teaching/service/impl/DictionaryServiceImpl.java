@@ -13,7 +13,7 @@ import topica.linhnv5.video.teaching.service.DictionaryService;
  * @author ljnk975
  */
 @Service
-public class Dictionary implements DictionaryService {
+public class DictionaryServiceImpl implements DictionaryService {
 
 	/**
 	 * Search word infomation from dictionary

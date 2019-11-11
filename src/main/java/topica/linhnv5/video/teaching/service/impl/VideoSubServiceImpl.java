@@ -1,13 +1,11 @@
 package topica.linhnv5.video.teaching.service.impl;
 
-import java.util.concurrent.Future;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import topica.linhnv5.video.teaching.lyric.SongLyric;
-import topica.linhnv5.video.teaching.model.TaskResult;
 import topica.linhnv5.video.teaching.model.Task;
+import topica.linhnv5.video.teaching.model.TaskExecute;
 import topica.linhnv5.video.teaching.service.TaskService;
 import topica.linhnv5.video.teaching.service.VideoSubException;
 import topica.linhnv5.video.teaching.service.VideoSubService;
@@ -22,39 +20,43 @@ public class VideoSubServiceImpl implements VideoSubService {
 	private VideoSubExecute execute;
 
 	@Override
-	public Task<TaskResult> addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName) throws VideoSubException {
+	public Task addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName) throws VideoSubException {
 		// Create task
-		Task<TaskResult> task = new Task<TaskResult>();
+		TaskExecute task = new TaskExecute();
 
-		// Create async job
-		Future<TaskResult> future = execute.doAddSubToVideo(track, artist, inputFileName, inputSubFileName, task);
+		try {
+			// Add task
+			taskService.addTask(task);
 
-		// Set task
-		task.setTask(future);
-
-		// Add task
-		taskService.addTask(task);
+			// Create async job
+			execute.doAddSubToVideo(track, artist, inputFileName, inputSubFileName, task);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw new VideoSubException(e.getMessage());
+		}
 
 		// And just return it
-		return task;
+		return task.getTask();
 	}
 
 	@Override
-	public Task<TaskResult> createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputMusicFileName, String inputSubFileName) throws VideoSubException {
+	public Task createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputMusicFileName, String inputSubFileName) throws VideoSubException {
 		// Create task
-		Task<TaskResult> task = new Task<TaskResult>();
+		TaskExecute task = new TaskExecute();
 
-		// Create async job
-		Future<TaskResult> future = execute.doCreateSubVideoFromMusic(track, artist, inputBackFileName, inputMusicFileName, inputSubFileName, task);
+		try {
+			// Add task
+			taskService.addTask(task);
 
-		// Set task
-		task.setTask(future);
-
-		// Add task
-		taskService.addTask(task);
+			// Create async job
+			execute.doCreateSubVideoFromMusic(track, artist, inputBackFileName, inputMusicFileName, inputSubFileName, task);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw new VideoSubException(e.getMessage());
+		}
 
 		// And just return it
-		return task;
+		return task.getTask();
 	}
 
 	@Override
@@ -62,7 +64,7 @@ public class VideoSubServiceImpl implements VideoSubService {
 		SongLyric ret = null;
 
 		try {
-			ret = execute.doGetSubtitle(execute.doGetMatchingTrack(track, artist));
+			ret = execute.doGetSubtitle(track, artist);
 		} catch(Exception e) {
 			throw new VideoSubException(e.getMessage());
 		}

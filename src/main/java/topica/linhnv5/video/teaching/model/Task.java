@@ -1,56 +1,56 @@
 package topica.linhnv5.video.teaching.model;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
 
 /**
- * Async task, hold information about a task 
+ * Task table, hold information about task
  * @author ljnk975
  */
-public class Task<T> {
+@Entity
+@Table(name = "Task")
+public class Task {
 
-	/**
-	 * Staus of task T
-	 * @author ljnk975
-	 */
-	public enum Status {
-		CREATED, RUNNING, FINISHED
-	}
-
-	/**
-	 * ID of task
-	 */
+	@Id
+	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 
-	/**
-	 * The main task
-	 */
-	private Future<T> task;
+	// 0 - from video, 1 - from mp3
+	@Column(name = "type")
+	private byte type;
 
-	/**
-	 * The percent progress estimate of task
-	 */
-	private byte progress;
+	@OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "music_id", referencedColumnName = "id")
+ 	private Music music;
 
-	/**
-	 * Status of task, begin with created
-	 */
-	private Status status = Status.CREATED;
+	@Column(name = "back")
+	private String backFile;
 
-	/**
-	 * Start time of task
-	 */
-	private long startMilis;
+	@Column(name = "input")
+	private String inputFile;
 
-	/**
-	 * End time of task
-	 */
-	private long endMilis;
+	@Column(name = "sub")
+	private String subFile;
+
+	@Column(name = "output")
+	private String outputFile;
+
+	@Column(name = "errorOccur")
+	private String error;
+
+	@Column(name = "time")
+	private long timeConsume;
+
+	// Type
+	public static byte TASK_FROM_VIDEO_TYPE = 0;
+	public static byte TASK_FROM_MUSIC_TYPE = 1;
 
 	public Task() {
-		this.status = Status.CREATED;
-		this.progress = 0;
-		this.startMilis = System.currentTimeMillis();
 	}
 
 	/**
@@ -68,90 +68,115 @@ public class Task<T> {
 	}
 
 	/**
-	 * @return the progress
+	 * @return the type
 	 */
-	public byte getProgress() {
-		return progress;
+	public byte getType() {
+		return type;
 	}
 
 	/**
-	 * @param progress the progress to set
+	 * @param type the type to set
 	 */
-	public void setProgress(byte progress) {
-		if (progress <= 0)
-			this.progress = 0;
-		else if (progress >= 100) {
-			this.progress = 100;
-			this.endMilis = System.currentTimeMillis();
-			this.status = Status.FINISHED;
-		} else
-			this.progress = progress;
+	public void setType(byte type) {
+		this.type = type;
 	}
 
 	/**
-	 * @return the status
+	 * @return the music
 	 */
-	public Status getStatus() {
-		return status;
+	public Music getMusic() {
+		return music;
 	}
 
 	/**
-	 * @param status the status to set
+	 * @param music the music to set
 	 */
-	public void setStatus(Status status) {
-		this.status = status;
+	public void setMusic(Music music) {
+		this.music = music;
 	}
 
 	/**
-	 * @return the task
+	 * @return the backFile
 	 */
-	public Future<T> getTask() {
-		return task;
+	public String getBackFile() {
+		return backFile;
 	}
 
 	/**
-	 * @param task the task to set
+	 * @param backFile the backFile to set
 	 */
-	public void setTask(Future<T> task) {
-		this.task = task;
+	public void setBackFile(String backFile) {
+		this.backFile = backFile;
 	}
 
 	/**
-	 * @return the startMilis
+	 * @return the inputFile
 	 */
-	public long getStartMilis() {
-		return startMilis;
+	public String getInputFile() {
+		return inputFile;
 	}
 
 	/**
-	 * @param startMilis the startMilis to set
+	 * @param inputFile the inputFile to set
 	 */
-	public void setStartMilis(long startMilis) {
-		this.startMilis = startMilis;
+	public void setInputFile(String inputFile) {
+		this.inputFile = inputFile;
 	}
 
 	/**
-	 * @return the endMilis
+	 * @return the subFile
 	 */
-	public long getEndMilis() {
-		return endMilis;
+	public String getSubFile() {
+		return subFile;
 	}
 
 	/**
-	 * @param endMilis the endMilis to set
+	 * @param subFile the subFile to set
 	 */
-	public void setEndMilis(long endMilis) {
-		this.endMilis = endMilis;
+	public void setSubFile(String subFile) {
+		this.subFile = subFile;
 	}
 
 	/**
-	 * Blocking call, get the result
-	 * @return the result of task
-	 * @throws ExecutionException 
-	 * @throws InterruptedException 
+	 * @return the outputFile
 	 */
-	public T get() throws InterruptedException, ExecutionException {
-		return this.task.get();
+	public String getOutputFile() {
+		return outputFile;
+	}
+
+	/**
+	 * @param outputFile the outputFile to set
+	 */
+	public void setOutputFile(String outputFile) {
+		this.outputFile = outputFile;
+	}
+
+	/**
+	 * @return the error
+	 */
+	public String getError() {
+		return error;
+	}
+
+	/**
+	 * @param error the error to set
+	 */
+	public void setError(String error) {
+		this.error = error;
+	}
+
+	/**
+	 * @return the timeConsume
+	 */
+	public Long getTimeConsume() {
+		return timeConsume;
+	}
+
+	/**
+	 * @param timeConsume the timeConsume to set
+	 */
+	public void setTimeConsume(long timeConsume) {
+		this.timeConsume = timeConsume;
 	}
 
 }

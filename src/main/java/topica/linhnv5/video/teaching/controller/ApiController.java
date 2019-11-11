@@ -32,12 +32,12 @@ import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegFormat;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.probe.FFmpegStream;
-import topica.linhnv5.video.teaching.model.TaskResponse;
+import topica.linhnv5.video.teaching.controller.response.TaskInfo;
+import topica.linhnv5.video.teaching.controller.response.TaskCreate;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
-import topica.linhnv5.video.teaching.model.TaskResult;
 import topica.linhnv5.video.teaching.model.Task;
-import topica.linhnv5.video.teaching.model.TaskInfo;
+import topica.linhnv5.video.teaching.model.TaskExecute;
 import topica.linhnv5.video.teaching.service.TaskService;
 import topica.linhnv5.video.teaching.service.VideoSubService;
 import topica.linhnv5.video.teaching.util.FileUtil;
@@ -65,11 +65,11 @@ public class ApiController {
 	private String inFolder;
 
 	@PostMapping(path = "/create.fromvideo")
-	@ApiOperation(value = "Create subbing video task from video", response = TaskResponse.class)
+	@ApiOperation(value = "Create subbing video task from video", response = TaskCreate.class)
 	@ApiResponses({
 		@ApiResponse(code = 200, message = "Result SUCCESS status if successful, ERROR if some error occur")
 	})
-	public ResponseEntity<TaskResponse> addSubFromVideo(
+	public ResponseEntity<TaskCreate> addSubFromVideo(
 			@ApiParam(value = "Track name(must be define if video metadata not have title)", required = false)
 			@RequestParam(value = "title", required = false)
 				String title,
@@ -84,7 +84,7 @@ public class ApiController {
 				MultipartFile sub) {
 //			@ModelAttribute VideoConfig config) {
 		// The response
-		TaskResponse response = null;
+		TaskCreate response = null;
 
 		try {
 			// Info track, artist
@@ -140,27 +140,27 @@ public class ApiController {
 			System.out.println("Request sub video track: "+trackName+" artist: "+artistName);
 
 			// Create and return a task
-			Task<TaskResult> task = videoSubService.addSubToVideo(trackName, artistName, inFile.getName(), inSub == null ? null : inSub.getName());
+			Task task = videoSubService.addSubToVideo(trackName, artistName, inFile.getName(), inSub == null ? null : inSub.getName());
 
 			// 
 			System.out.println("   return task id="+task.getId());
 
 			// Return task name
-			response = new TaskResponse("SUCCESS", "", task.getId());
+			response = new TaskCreate("SUCCESS", "", task.getId());
 		} catch (Exception e) {
 			System.out.println("   err: "+e.getMessage());
-			response = new TaskResponse("ERROR", e.getMessage(), "");
+			response = new TaskCreate("ERROR", e.getMessage(), "");
 		}
 
-		return new ResponseEntity<TaskResponse>(response, HttpStatus.OK);
+		return new ResponseEntity<TaskCreate>(response, HttpStatus.OK);
 	}
 
 	@PostMapping(path = "/create.frommusic")
-	@ApiOperation(value = "Create subbing video task from background and music", response = TaskResponse.class)
+	@ApiOperation(value = "Create subbing video task from background and music", response = TaskCreate.class)
 	@ApiResponses({
 		@ApiResponse(code = 200, message = "Result SUCCESS status if successful, ERROR if some error occur")
 	})
-	public ResponseEntity<TaskResponse> addSubFromMusic(
+	public ResponseEntity<TaskCreate> addSubFromMusic(
 			@ApiParam(value = "Track name(must be define if video metadata not have title)", required = true)
 			@RequestParam(value = "title", required = true)
 				String title,
@@ -178,7 +178,7 @@ public class ApiController {
 				MultipartFile sub) {
 //			@ModelAttribute VideoConfig config) {
 		// The response
-		TaskResponse response = null;
+		TaskCreate response = null;
 
 		try {
 			// Check if track and artist exists
@@ -204,19 +204,19 @@ public class ApiController {
 			System.out.println("Request sub image track: "+title+" artist: "+artist);
 
 			// Create and return a task
-			Task<TaskResult> task = videoSubService.createSubVideoFromMusic(title, artist, inFile == null ? null : inFile.getName(), inMusic == null ? null : inMusic.getName(), inSub == null ? null : inSub.getName());
+			Task task = videoSubService.createSubVideoFromMusic(title, artist, inFile == null ? null : inFile.getName(), inMusic == null ? null : inMusic.getName(), inSub == null ? null : inSub.getName());
 
 			// 
 			System.out.println("   return task id="+task.getId());
 
 			// Return task name
-			response = new TaskResponse("SUCCESS", "", task.getId());
+			response = new TaskCreate("SUCCESS", "", task.getId());
 		} catch (Exception e) {
 			System.out.println("   err: "+e.getMessage());
-			response = new TaskResponse("ERROR", e.getMessage(), "");
+			response = new TaskCreate("ERROR", e.getMessage(), "");
 		}
 
-		return new ResponseEntity<TaskResponse>(response, HttpStatus.OK);
+		return new ResponseEntity<TaskCreate>(response, HttpStatus.OK);
 	}
 
 	@GetMapping(path = "/subtitle")
@@ -265,26 +265,33 @@ public class ApiController {
 		@ApiResponse(code = 404, message = "TaskID is not found")
 	})
 	public ResponseEntity<TaskInfo> getTaskInfo(@RequestParam("id") String id) throws InterruptedException, ExecutionException {
-		Task<TaskResult> task = taskService.getTaskById(id, TaskResult.class);
+		// Find task
+		Task task = taskService.getTaskById(id);
 
 		if (task == null)
 			return new ResponseEntity<TaskInfo>(HttpStatus.NOT_FOUND);
-		
+
 		TaskInfo result = new TaskInfo();
-		if (task.getStatus() == Task.Status.FINISHED) {
-			TaskResult resultTask = task.get();
-			if (resultTask.getException() != null) {
+
+		// Is execute
+		TaskExecute execute = taskService.getTaskExecuteById(id);
+		if (execute != null) {
+			result.setStatus("RUNNING");
+			result.setTimeConsume(System.currentTimeMillis()-execute.getStartMilis());
+			result.setProgress(execute.getProgress());
+		} else if (task.getError() != null || task.getOutputFile() != null) {
+			if (task.getError() != null) {
 				result.setStatus("ERROR");
-				result.setError(resultTask.getException().getMessage());
+				result.setError(task.getError());
 			} else
 				result.setStatus("SUCCESS");
-			result.setTimeConsume(task.getEndMilis()-task.getStartMilis());
+			result.setProgress(100);
+			result.setTimeConsume(task.getTimeConsume());
 		} else {
-			result.setStatus("RUNNING");
-			result.setTimeConsume(System.currentTimeMillis()-task.getStartMilis());
+			result.setStatus("ERROR");
+			result.setError("Task can't eexecute");
 		}
-		result.setProgress(task.getProgress());
-		
+
 		return new ResponseEntity<TaskInfo>(result, HttpStatus.OK);
 	}
 
@@ -308,6 +315,9 @@ public class ApiController {
 		return MediaType.APPLICATION_OCTET_STREAM;
 	}
 
+	@Value("${video.teaching.outfolder}")
+	private String outFolder;
+
 	@GetMapping(path = "/result")
 	@ApiOperation(value = "Get result video of task")
 	@ApiResponses({
@@ -317,35 +327,33 @@ public class ApiController {
 		@ApiResponse(code = 204, message = "Task isn't finnished yet")
 	})
 	public ResponseEntity<?> getTaskResult(@RequestParam("id") String id) throws InterruptedException, ExecutionException, FileNotFoundException {
-		Task<TaskResult> task = taskService.getTaskById(id, TaskResult.class);
+		Task task = taskService.getTaskById(id);
 
 		if (task == null)
 			return new ResponseEntity<String>("Task not found!", HttpStatus.NOT_FOUND);
 
-		if (task.getStatus() != Task.Status.FINISHED)
+		if (task.getError() == null && task.getOutputFile() == null)
 			return new ResponseEntity<String>("Task not finish!", HttpStatus.NO_CONTENT);
 
-		// get result
-		TaskResult resultTask = task.get();
-
 		// If error
-		if (resultTask.getException() != null)
+		if (task.getError() != null)
 			return new ResponseEntity<String>("Task error!", HttpStatus.FORBIDDEN);
 
 		// Return value
-		MediaType mediaType = getMediaTypeForFileName(resultTask.getOutput().getName());
+		MediaType mediaType = getMediaTypeForFileName(task.getOutputFile());
 //		System.out.println("fileName: " + resultTask.getOutput().getName());
 //		System.out.println("mediaType: " + mediaType);
 
-		InputStreamResource resource = new InputStreamResource(new FileInputStream(resultTask.getOutput()));
+		File output = new File(outFolder+task.getOutputFile());
+		InputStreamResource resource = new InputStreamResource(new FileInputStream(output));
 
 		return ResponseEntity.ok()
 				// Content-Disposition
-				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resultTask.getOutput().getName())
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + output.getName())
 				// Content-Type
 				.contentType(mediaType)
 				// Contet-Length
-				.contentLength(resultTask.getOutput().length()) //
+				.contentLength(output.length()) //
 				.body(resource);
 	}
 	
