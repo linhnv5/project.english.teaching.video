@@ -170,7 +170,7 @@ public class LyricConverter {
 				wordInfo.setTrans(csv.getTrans());
 
 				if (wordInfo.getWordDictionary() == null || wordInfo.getType() == null || wordInfo.getAPI() == null || wordInfo.getTrans() == null) {
-					WordInfo wordInfo2 = dictionary.searchWord(wordInfo.getWord());
+					WordInfo wordInfo2 = dictionary.searchWord(wordInfo.getWordDictionary() != null ? wordInfo.getWordDictionary() : wordInfo.getWord());
 
 					if (wordInfo2 != null) {
 						if (wordInfo.getWordDictionary() == null)
@@ -260,7 +260,7 @@ public class LyricConverter {
 					wordInfo.setTrans(cell.getStringCellValue());
 
 				if (wordInfo.getWordDictionary() == null || wordInfo.getType() == null || wordInfo.getAPI() == null || wordInfo.getTrans() == null) {
-					WordInfo wordInfo2 = dictionary.searchWord(wordInfo.getWord());
+					WordInfo wordInfo2 = dictionary.searchWord(wordInfo.getWordDictionary() != null ? wordInfo.getWordDictionary() : wordInfo.getWord());
 
 					if (wordInfo2 != null) {
 						if (wordInfo.getWordDictionary() == null)
