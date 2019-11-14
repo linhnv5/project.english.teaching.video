@@ -91,6 +91,10 @@ public class Lyric {
 	public String getLyric(Color markColor, float subSize) {
 		StringBuilder buff = new StringBuilder();
 
+		String st = "<font size=1>.</font>   ";
+		String ed = "   <font size=1>.</font>";
+
+		buff.append(st);
 		if (this.mark == null)
 			buff.append(this.lyric);
 		else {
@@ -102,24 +106,25 @@ public class Lyric {
 			for (int i = 0; i < aLyric.length; i++) {
 				for (int j = 0; j < aMark.length; j++) {
 					if (i+j >= aLyric.length || !aLyric[i+j].equals(aMark[j])) {
-						if (buff.length() > 0)
-							buff.append(" ");
+						buff.append(" ");
 						buff.append(aLyric[i]);
 						continue loop1;
 					}
 				}
 				i += aMark.length-1;
-				if (buff.length() > 0)
-					buff.append(" ");
+				buff.append(" ");
 				buff.append("<b><font color=\""+color+"\">").append(this.mark.getWord()).append("</font></b>");
 			}
 		}
+		buff.append(ed);
 
 		if (this.lyricTrans != null) {
 			buff.append("\n")
+				.append(st)
 				.append("<font size=").append(subSize).append(">")
 				.append(this.lyricTrans)
 				.append("</font>")
+				.append(ed)
 				;
 		}
 

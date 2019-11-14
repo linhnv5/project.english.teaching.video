@@ -140,19 +140,19 @@ public class WordInfo {
 		this.trans = Character.toUpperCase(trans.charAt(0))+trans.substring(1);
 	}
 
-	public String getTypeShort() {
-		if (this.type == null)
+	public static String getTypeShort(String type) {
+		if (type == null)
 			return null;
-		return this.type.equals("noun") ? "n"
-				: this.type.equals("verb") ? "v"
-				: this.type.equals("adjective") ? "adj"
-				: this.type.equals("adverb") ? "adv"
-				: this.type.equals("preposition") ? "prep"
-				: this.type.equals("pronoun") ? "pron"
-				: this.type.equals("conjunction") ? "conj"
-				: this.type.contains("article") ? "art"
-				: this.type.equals("interjection") ? "interj"
-				: "";
+		return type.equals("noun") ? "n"
+				: type.equals("verb") ? "v"
+				: type.equals("adjective") ? "adj"
+				: type.equals("adverb") ? "adv"
+				: type.equals("preposition") ? "prep"
+				: type.equals("pronoun") ? "pron"
+				: type.equals("conjunction") ? "conj"
+				: type.contains("article") ? "art"
+				: type.equals("interjection") ? "interj"
+				: type;
 	}
 
 	/**

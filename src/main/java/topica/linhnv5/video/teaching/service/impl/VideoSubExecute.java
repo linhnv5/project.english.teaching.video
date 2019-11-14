@@ -97,9 +97,9 @@ public class VideoSubExecute {
 	private String addSubtitle(File sub, Color fontColor, float fontSize, float opacity) {
 		return new StringBuilder()
 				.append("subtitles=\'input/"+sub.getName()+"\'")
-				.append(":force_style='BorderStyle=4,BackColour=&H").append(Integer.toHexString((int)(255*opacity)).toUpperCase()).append("000000")
+				.append(":force_style='BorderStyle=4,Outline=0,Shadow=0")
+				.append(",BackColour=&H").append(Integer.toHexString((int)(255*opacity)).toUpperCase()).append("000000")
 				.append(",OutlineColour=&H").append(Integer.toHexString((int)(255*opacity)).toUpperCase()).append("000000")
-				.append(",Outline=1,Shadow=1,MarginV=20,MarginL=30,MarginR=30")
 				.append(",Fontsize=").append(fontSize)
 				.append(",PrimaryColour=&H").append(Integer.toHexString(fontColor.getBlue()).toUpperCase())
 					.append(Integer.toHexString(fontColor.getGreen()).toUpperCase())
@@ -137,7 +137,7 @@ public class VideoSubExecute {
 		int h1 = c.getFontMetrics(dynamicFont1).getHeight();
 
 	    String api  = info.getAPI();
-	    String type = info.getTypeShort();
+	    String type = info.getType();
 
 	    int w2 = 0;
 	    int h2 = 0;
@@ -275,7 +275,7 @@ public class VideoSubExecute {
 	 * @param config
 	 */
 	private Config fullConfig(Config config) {
-		System.out.println("Config: "+config);
+//		System.out.println("Config: "+config);
 
 		if (config == null)
 			config = new Config();
@@ -306,16 +306,16 @@ public class VideoSubExecute {
 		if (config.getWordBoxY() == 0)
 			config.setWordBoxY(-0.5F);
 
-		System.out.println("Lopacity: "+config.getLyricOpacity());
-		System.out.println("Lsize: "+config.getLyricSize());
-		System.out.println("Ltsize: "+config.getLyricTransSize());
-		System.out.println("lco: "+config.getLyricColor());
-		System.out.println("lm: "+config.getLyricMarkColor());
-
-		System.out.println("wopacity: "+config.getWordBoxOpacity());
-		System.out.println("pcolor: "+config.getWordBoxPrimaryColor());
-		System.out.println("scolor: "+config.getWordBoxSecondaryColor());
-		System.out.println("x: "+config.getWordBoxX()+" y: "+config.getWordBoxY());
+//		System.out.println("Lopacity: "+config.getLyricOpacity());
+//		System.out.println("Lsize: "+config.getLyricSize());
+//		System.out.println("Ltsize: "+config.getLyricTransSize());
+//		System.out.println("lco: "+config.getLyricColor());
+//		System.out.println("lm: "+config.getLyricMarkColor());
+//
+//		System.out.println("wopacity: "+config.getWordBoxOpacity());
+//		System.out.println("pcolor: "+config.getWordBoxPrimaryColor());
+//		System.out.println("scolor: "+config.getWordBoxSecondaryColor());
+//		System.out.println("x: "+config.getWordBoxX()+" y: "+config.getWordBoxY());
 
 		return config;
 	}

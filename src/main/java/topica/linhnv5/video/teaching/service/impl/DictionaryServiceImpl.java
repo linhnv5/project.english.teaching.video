@@ -53,7 +53,7 @@ public class DictionaryServiceImpl implements DictionaryService {
 		elements = doc.select(".pos.dpos");
 
 		if(elements.size() > 0) {
-			wordInfo.setType(elements.get(0).html());
+			wordInfo.setType(WordInfo.getTypeShort(elements.get(0).html()));
 //			if (wordInfo.getTypeShort().equals(""))
 //				System.out.println("   typemis: "+wordInfo.getType());
 		}
