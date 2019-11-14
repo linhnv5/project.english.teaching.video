@@ -10,6 +10,12 @@ import topica.linhnv5.video.teaching.service.TaskService;
 import topica.linhnv5.video.teaching.service.VideoSubException;
 import topica.linhnv5.video.teaching.service.VideoSubService;
 
+/**
+ * Video service, create video task
+ * 
+ * @author ljnk975
+ *
+ */
 @Service
 public class VideoSubServiceImpl implements VideoSubService {
 

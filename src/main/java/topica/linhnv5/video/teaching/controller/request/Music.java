@@ -3,8 +3,7 @@ package topica.linhnv5.video.teaching.controller.request;
 import io.swagger.annotations.ApiParam;
 
 /**
- * Request model hold information about chart name, artist name, video, type
- * request
+ * Request model hold information about chart name, artist name
  * 
  * @author ljnk975
  */
@@ -13,13 +12,13 @@ public class Music {
 	/**
 	 * Name of music video
 	 */
-	@ApiParam(required = false, value = "Track name(must be define if video metadata not have title)")
+	@ApiParam(value = "Track name(must be define if video metadata not have title)", required = false, example = "I do")
 	private String title;
 
 	/**
 	 * Main artist name
 	 */
-	@ApiParam(required = false, value = "Artist name(must be define if video metadata not have artist)")
+	@ApiParam(value = "Artist name(must be define if video metadata not have artist)", required = false, example = "911")
 	private String artist;
 
 	/**

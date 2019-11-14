@@ -1,4 +1,4 @@
-package topica.linhnv5.video.teaching.zing.model;
+package topica.linhnv5.video.teaching.source.zing.model;
 
 import com.google.gson.annotations.SerializedName;
 

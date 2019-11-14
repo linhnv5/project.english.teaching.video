@@ -1,20 +1,17 @@
-package topica.linhnv5.video.teaching.zing.model;
+package topica.linhnv5.video.teaching.source.zing.model;
 
 import com.google.gson.annotations.SerializedName;
 
-public class StreamResult {
+public class StreamData {
 
 	@SerializedName("err")
 	private int errCode;
 
 	@SerializedName("msg")
 	private String msg;
-	
-	@SerializedName("data")
-	private StreamData data;
 
-	@SerializedName("timestamp")
-	private long timestamp;
+	@SerializedName("default")
+	private StreamDefaultData data;
 
 	/**
 	 * @return the errCode
@@ -47,29 +44,15 @@ public class StreamResult {
 	/**
 	 * @return the data
 	 */
-	public StreamData getData() {
+	public StreamDefaultData getData() {
 		return data;
 	}
 
 	/**
 	 * @param data the data to set
 	 */
-	public void setData(StreamData data) {
+	public void setData(StreamDefaultData data) {
 		this.data = data;
-	}
-
-	/**
-	 * @return the timestamp
-	 */
-	public long getTimestamp() {
-		return timestamp;
-	}
-
-	/**
-	 * @param timestamp the timestamp to set
-	 */
-	public void setTimestamp(long timestamp) {
-		this.timestamp = timestamp;
 	}
 
 }

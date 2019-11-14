@@ -2,6 +2,11 @@ package topica.linhnv5.video.teaching.lyric;
 
 import com.opencsv.bean.CsvBindByName;
 
+/**
+ * CSV music pojo
+ * @author ljnk975
+ *
+ */
 public class LyricCSV {
 
 	@CsvBindByName(column = "from")

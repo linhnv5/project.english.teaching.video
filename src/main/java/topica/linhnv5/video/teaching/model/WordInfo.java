@@ -1,6 +1,7 @@
 package topica.linhnv5.video.teaching.model;
 
 import java.awt.FontMetrics;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +35,11 @@ public class WordInfo {
 	 * Word translate
 	 */
 	private String trans;
+
+	/**
+	 * Image view of this word
+	 */
+	private BufferedImage image;
 
 	public WordInfo(String word) {
 		this.word = word;
@@ -131,7 +137,7 @@ public class WordInfo {
 	 * @param trans the trans to set
 	 */
 	public void setTrans(String trans) {
-		this.trans = trans;
+		this.trans = Character.toUpperCase(trans.charAt(0))+trans.substring(1);
 	}
 
 	public String getTypeShort() {
@@ -147,6 +153,20 @@ public class WordInfo {
 				: this.type.contains("article") ? "art"
 				: this.type.equals("interjection") ? "interj"
 				: "";
+	}
+
+	/**
+	 * @return the image
+	 */
+	public BufferedImage getImage() {
+		return image;
+	}
+
+	/**
+	 * @param image the image to set
+	 */
+	public void setImage(BufferedImage image) {
+		this.image = image;
 	}
 
 }

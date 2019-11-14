@@ -6,6 +6,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Collectors;
 
+/**
+ * Utility contain function to create new file, get file contain, ...
+ * 
+ * @author ljnk975
+ */
 public class FileUtil {
 
 	/**
@@ -94,6 +99,16 @@ public class FileUtil {
 	 */
 	public static String getFileString(File f) throws Exception {
 		return Files.lines(Paths.get(f.getPath()), StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
+	}
+
+	/**
+	 * Read file content
+	 * @param f file
+	 * @return the file contain
+	 * @throws Exception
+	 */
+	public static byte[] getFileContent(File f) throws Exception {
+		return Files.readAllBytes(Paths.get(f.getPath()));
 	}
 
 }

@@ -256,8 +256,12 @@ public class Lyric {
 		this.to = toTimestamp;
 	}
 
+	private boolean isMeta() {
+		return lyric.equals("") || StringUtils.startsWithIgnoreCase(lyric, "Bài hát") || StringUtils.startsWithIgnoreCase(lyric, "Ca sĩ") || StringUtils.startsWithIgnoreCase(lyric, "Song") || StringUtils.startsWithIgnoreCase(lyric, "Singer");
+	}
+
 	public WordInfo markSomeText(DictionaryService dictionary) {
-		if (lyric.equals("") || StringUtils.startsWithIgnoreCase(lyric, "Bài hát") || StringUtils.startsWithIgnoreCase(lyric, "Ca sĩ"))
+		if (isMeta())
 			return null;
 
 		String[] aLyric = lyric.split(" ");
@@ -278,7 +282,7 @@ public class Lyric {
 	}
 
 	public void translate(Translate translate) {
-		if (lyric.equals("") || StringUtils.startsWithIgnoreCase(lyric, "Bài hát") || StringUtils.startsWithIgnoreCase(lyric, "Ca sĩ"))
+		if (isMeta())
 			return;
 
 		Translation translation = translate.translate(this.lyric,
