@@ -97,14 +97,13 @@ public class VideoSubExecute {
 	private String addSubtitle(File sub, Color fontColor, float fontSize, float opacity) {
 		return new StringBuilder()
 				.append("subtitles=\'input/"+sub.getName()+"\'")
-				.append(":force_style='BorderStyle=4,BackColour=&H").append(Integer.toHexString((int)(255*opacity)).toUpperCase()).append("&")
-				.append(",OutlineColour=&H").append(Integer.toHexString((int)(255*opacity)).toUpperCase()).append("&")
+				.append(":force_style='BorderStyle=4,BackColour=&H").append(Integer.toHexString((int)(255*opacity)).toUpperCase()).append("000000")
+				.append(",OutlineColour=&H").append(Integer.toHexString((int)(255*opacity)).toUpperCase()).append("000000")
 				.append(",Outline=1,Shadow=1,MarginV=20,MarginL=30,MarginR=30")
 				.append(",Fontsize=").append(fontSize)
 				.append(",PrimaryColour=&H").append(Integer.toHexString(fontColor.getBlue()).toUpperCase())
 					.append(Integer.toHexString(fontColor.getGreen()).toUpperCase())
 					.append(Integer.toHexString(fontColor.getRed()).toUpperCase())
-					.append("&")
 				.append("'")
 				.toString();
 	}
