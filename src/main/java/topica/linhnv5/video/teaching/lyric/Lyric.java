@@ -94,7 +94,7 @@ public class Lyric {
 		if (this.mark == null)
 			buff.append(this.lyric);
 		else {
-			String color = "#"+Integer.toHexString(markColor.getRGB());
+			String color = "#"+Integer.toHexString(markColor.getRGB()).substring(2);
 			String[] aLyric = lyric.split(" ");
 			String[] aMark = this.mark.getWord().split(" ");
 
