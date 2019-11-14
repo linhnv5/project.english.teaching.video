@@ -399,8 +399,8 @@ public class VideoSubExecute {
 				//
 				System.out.println("Do FFmpeg");
 
-				int width  = (config.getW() > 0 ? config.getW() : stream.width)*2/2;
-				int height = (config.getH() > 0 ? config.getH() : stream.height)*2/2;
+				int width  = (config.getW() > 0 ? config.getW() : stream.width)/2*2;
+				int height = (config.getH() > 0 ? config.getH() : stream.height)/2*2;
 
 				// Make filter
 				StringBuilder vfilter = new StringBuilder("scale=").append(width).append(":").append(height).append("[in];[in]")
@@ -609,8 +609,8 @@ public class VideoSubExecute {
 				//
 				System.out.println("Do FFmpeg");
 
-				int width  = (config.getW() > 0 ? config.getW() : stream2.width)*2/2;
-				int height = (config.getH() > 0 ? config.getH() : stream2.height)*2/2;
+				int width  = (config.getW() > 0 ? config.getW() : stream2.width)/2*2;
+				int height = (config.getH() > 0 ? config.getH() : stream2.height)/2*2;
 
 				// Do ffmpeg
 				FFmpegBuilder builder = ffmpeg.builder()
