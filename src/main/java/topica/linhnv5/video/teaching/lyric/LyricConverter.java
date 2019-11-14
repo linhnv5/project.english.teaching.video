@@ -253,17 +253,19 @@ public class LyricConverter {
 				if (wordInfo.getWordDictionary() == null || wordInfo.getType() == null || wordInfo.getAPI() == null || wordInfo.getTrans() == null) {
 					WordInfo wordInfo2 = dictionary.searchWord(wordInfo.getWord());
 
-					if (wordInfo.getWordDictionary() == null)
-						wordInfo.setWordDictionary(wordInfo2.getWordDictionary());
+					if (wordInfo2 != null) {
+						if (wordInfo.getWordDictionary() == null)
+							wordInfo.setWordDictionary(wordInfo2.getWordDictionary());
 
-					if (wordInfo.getType() == null)
-						wordInfo.setType(wordInfo2.getType());
-					
-					if (wordInfo.getAPI() == null)
-						wordInfo.setAPI(wordInfo2.getAPI());
-					
-					if (wordInfo.getTrans() == null)
-						wordInfo.setTrans(wordInfo2.getTrans());
+						if (wordInfo.getType() == null)
+							wordInfo.setType(wordInfo2.getType());
+						
+						if (wordInfo.getAPI() == null)
+							wordInfo.setAPI(wordInfo2.getAPI());
+						
+						if (wordInfo.getTrans() == null)
+							wordInfo.setTrans(wordInfo2.getTrans());
+					}
 				}
 
 				inSongLyric.getMark().add(wordInfo);
