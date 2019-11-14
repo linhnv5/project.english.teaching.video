@@ -36,6 +36,7 @@ import net.bramp.ffmpeg.probe.FFmpegFormat;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.probe.FFmpegStream;
 import topica.linhnv5.video.teaching.controller.response.TaskInfo;
+import topica.linhnv5.video.teaching.controller.request.Config;
 import topica.linhnv5.video.teaching.controller.request.Music;
 import topica.linhnv5.video.teaching.controller.response.TaskCreate;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
@@ -97,6 +98,7 @@ public class ApiController {
 		@ApiResponse(code = 200, message = "Result SUCCESS status if successful, ERROR if some error occur")
 	})
 	public ResponseEntity<TaskCreate> addSubFromVideo(
+			@RequestParam(required = true)
 			@ModelAttribute
 				Music music,
 //			@ApiParam(value = "Track name(must be define if video metadata not have title)", required = false, example = "I do")
@@ -110,8 +112,9 @@ public class ApiController {
 				MultipartFile video,
 			@ApiParam(value = "Subtitle file (csv)", required = false)		
 			@RequestParam(value = "sub", required = false)
-				MultipartFile sub
-//			@ModelAttribute VideoConfig config) {
+				MultipartFile sub,
+			@ModelAttribute
+				Config config
 		) {
 		// The response
 		TaskCreate response = null;
@@ -209,8 +212,10 @@ public class ApiController {
 				MultipartFile file,
 			@ApiParam(value = "Subtitle file (csv)", required = false)
 			@RequestParam(value = "sub", required = false)
-				MultipartFile sub) {
-//			@ModelAttribute VideoConfig config) {
+				MultipartFile sub,
+			@ModelAttribute
+				Config config
+			) {
 		// The response
 		TaskCreate response = null;
 
