@@ -234,14 +234,14 @@ public class ApiController {
 			// if sub exists then move it to input folder
 			String inSub = null;
 			if (sub != null) {
-				inFile = (f = FileUtil.matchFileName(inFolder, sub.getOriginalFilename())).getName();
+				inSub = (f = FileUtil.matchFileName(inFolder, sub.getOriginalFilename())).getName();
 				sub.transferTo(f);
 			}
 
 			// if music exists then move it to input folder
 			String inMusic = null;
 			if (file != null) {
-				inFile = (f = FileUtil.matchFileName(inFolder, file.getOriginalFilename())).getName();
+				inMusic = (f = FileUtil.matchFileName(inFolder, file.getOriginalFilename())).getName();
 				file.transferTo(f);
 			}
 

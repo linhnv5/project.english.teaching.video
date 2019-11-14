@@ -763,8 +763,6 @@ public class VideoSubExecute {
 			} else
 				back = new File(workingFolder + "image" + File.separator + "back" + ThreadLocalRandom.current().nextInt(5) + ".jpg");
 
-			System.out.println("Back: "+back.getName());
-
 			// back mp4 ?
 			boolean mp4 = !servletContext.getMimeType(back.getName()).startsWith("image");
 
