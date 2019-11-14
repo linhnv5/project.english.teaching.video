@@ -34,6 +34,7 @@ import net.bramp.ffmpeg.progress.ProgressListener;
 import topica.linhnv5.video.teaching.lyric.Lyric;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
+import topica.linhnv5.video.teaching.model.Config;
 import topica.linhnv5.video.teaching.model.Music;
 import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.model.TaskExecute;
@@ -85,225 +86,48 @@ public class VideoSubExecute {
 	@Value("${video.teaching.text.time}")
 	private int textTime;
 
-	/*
-	private String drawBox(double from, double to, int x, int y, int w, int h, String color, float opacity, int t) {
-		return new StringBuilder(",drawbox=").append(x).append(":").append(y).append(":").append(w).append(":").append(h)
-				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
-				.append(":color=").append(color).append("@").append(opacity)
-				.append(":t=").append(t < 0 ? "fill" : t)
-				.toString();
-	}
-
-	private String drawText(String text, double from, double to, int x, int y, String color, int size) {
-		StringBuilder buff = new StringBuilder(",drawtext=text='").append(text.replaceAll("\'", "\'\'").replaceAll("\"", "\"\"")).append("'")
-				.append(":x=").append(x).append(":y=").append(y)
-				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
-				.append(":fontfile='").append(fontFile).append("'")
-				.append(":fontcolor=").append(color)
-				.append(":fontsize=").append(size);
-		return buff.toString();
-	}
-	*/
-
-	private String addLogo(int width, int height) {
-		return new StringBuilder()
-				.append("[in];")
-				.append("movie=image/logo.jpg,scale=").append(width/10).append(":-1[watermark];")
-				.append("[in][watermark]overlay=10:10")
-				.toString();
-	}
-
-	private String addSubtitle(File sub) {
+	/**
+	 * Add subtitle filter to video
+	 * @param sub
+	 * @param fontColor
+	 * @param fontSize
+	 * @param opacity
+	 * @return
+	 */
+	private String addSubtitle(File sub, Color fontColor, float fontSize, float opacity) {
 		return new StringBuilder()
 				.append("subtitles=\'input/"+sub.getName()+"\'")
-				.append(":force_style='BorderStyle=4,BackColour=&H88000000,OutlineColour=&H88000000,Outline=1,Shadow=1,MarginV=20'")
+				.append(":force_style='BorderStyle=4,BackColour=&H").append(Integer.toHexString((int)(255*opacity))).append("000000")
+				.append(",OutlineColour=&H").append(Integer.toHexString((int)(255*opacity))).append("&")
+				.append(",Outline=1,Shadow=1,MarginV=20,MarginL=30,MarginR=30")
+				.append(",Fontsize=").append(fontSize)
+				.append(",PrimaryColour=&H").append(Integer.toHexString(fontColor.getBlue()))
+					.append(Integer.toHexString(fontColor.getGreen()))
+					.append(Integer.toHexString(fontColor.getRed()))
+					.append("&")
+				.append("'")
 				.toString();
 	}
-/*
-	private File drawWordInfoToImage(WordInfo info, float scale, File tmpDir) throws Exception {
+
+	/**
+	 * Draw word box to image
+	 * @param info
+	 * @param opacity
+	 * @return
+	 * @throws Exception
+	 */
+	private BufferedImage drawWordInfoImage(WordInfo info, Color wordColor, Color typeColor, float opacity) throws Exception {
 		// Color
-		Color wordColor = Color.YELLOW, dicColor = Color.WHITE,
-				borderColor = Color.WHITE, boxColor = new Color(0, 0, 0, 0x88);
-
-		// Capacity and maxw
-		int maxw = (int) (200*scale), maxh = (int) (200*scale);
-
-		// text font size
-		float textSize = 15*scale;
-
-		// x, y draw Text
-		int xt = 5, yt = 5;
-
-		// W, H of box
-		int w = 0, h = 0;
-
-		// Image
-		BufferedImage img = new BufferedImage(maxw, maxh, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D g = (Graphics2D) img.getGraphics();
-
-		// fill transparent
-		Composite oldComp = g.getComposite();
-		g.setComposite(AlphaComposite.Clear);
-		g.fillRect(0, 0, maxw, maxh);
-		g.setComposite(oldComp);
-
-		// Font
-	    Font dynamicFont32Pt = new Font(null, Font.BOLD, (int)(textSize*2));
-	    Font dynamicFont16Pt = new Font(null, Font.PLAIN, (int)textSize);
-
-	    // word dictionary
-	    g.setFont(dynamicFont32Pt);
-	    g.setColor(wordColor);
-	    g.drawString(info.getWordDictionary(), xt, yt+g.getFontMetrics().getAscent());
-
-	    w = Math.max(w, g.getFontMetrics().stringWidth(info.getWordDictionary()));
-	    h += g.getFontMetrics().getHeight()+5;
-
-	    // word type and api
-	    g.setFont(dynamicFont16Pt);
-
-		int tw = 0;
-		int th = 0;
-
-		// api
-		g.setColor(dicColor);
-		if (info.getAPI() != null && !info.getAPI().equals("")) {
-			int tw2 = g.getFontMetrics().stringWidth(info.getAPI());
-			int th2 = g.getFontMetrics().getHeight();
-
-			g.setColor(borderColor);
-			g.setStroke(new BasicStroke(2f));
-			g.drawRoundRect(xt, yt+h, tw2+10, th2+10, 5, 5);
-
-			g.setColor(dicColor);
-			g.drawString(info.getAPI(), xt+5, yt+h+5+g.getFontMetrics().getAscent());
-
-			tw = tw2+15;
-			th = th2+15;
-		}
-
-		// word type
-		if (info.getTypeShort() != null && !info.getTypeShort().equals("")) {
-			int tw2 = g.getFontMetrics().stringWidth(info.getTypeShort());
-			int th2 = g.getFontMetrics().getHeight();
-
-			g.setColor(borderColor);
-			g.setStroke(new BasicStroke(2f));
-			g.drawOval(xt+tw, yt+h, tw2+10, th2+10);
-
-			g.setColor(dicColor);
-			g.drawString(info.getTypeShort(), xt+tw+5, yt+h+5+g.getFontMetrics().getAscent());
-
-			tw += tw2+15;
-			th = th2+15;
-		}
-
-	    w = Math.max(w, tw);
-	    h += th;
-
-	    // trans
-		if (info.getTrans() != null && !info.getTrans().equals("")) {
-			String[] trans = info.getTrans(maxw, g.getFontMetrics());
-
-			for (String tran : trans) {
-				g.drawString(tran, xt, yt+h+g.getFontMetrics().getAscent());
-
-			    w = Math.max(w, g.getFontMetrics().stringWidth(tran));
-			    h += g.getFontMetrics().getHeight()+2;
-			}
-		}
-
-		// final w, h
-		w = xt*2 + w;
-		h = yt*2 + h;
-
-		// Image Out
-		BufferedImage img2 = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-
-		g = (Graphics2D) img2.getGraphics();
-
-		// draw background
-		g.setColor(boxColor);
-		g.fillRoundRect(0, 0, w, h, w/10, h/10);
-
-		// draw image
-		g.drawImage(img, 0, 0, null);
-
-		// draw border
-//		g.setColor(borderColor);
-//		g.setStroke(new BasicStroke(4f));
-//		g.drawRoundRect(0, 0, w+xt*2, h+xt*2, w/10, h/10);
-
-		// Write image
-		File f = FileUtil.matchFileName(tmpDir.getPath(), info.getWordDictionary()+".png");
-
-		System.out.println("Write "+f.getPath());
-
-		ImageIO.write(img2, "PNG", f);
-
-		return f;
-	}
-
-	private String drawWordInfo(WordInfo info, double from, double to, int x, int y, float scale, File tmpDir) throws Exception {
-		// Color
-		String wordColor = "yellow", dicColor = "white", boxColor = "black";
-
-		// Capacity and maxw
-		float boxCapacity = 0.5F; int maxw = 20;
-
-		// text font size
-		int textSize = (int) (15*scale), textW = 10;
-
-		// x, y draw Text
-		int xt = 20, yt = 20;
-
-		// W, H of box
-		int w = info.getWordDictionary().length()*15, h = 0;
-
-		StringBuilder buff = new StringBuilder(drawText(info.getWordDictionary(), from, to, x+xt, y+yt, wordColor, textSize*2)); h += textSize + 5;
-
-		if (info.getType() != null && !info.getType().equals("")) {
-			buff.append(drawBox(from, to, x+xt, y+yt+h+5, info.getType().length() * textW, textSize, dicColor, 1.0F, 2));
-			buff.append(drawText(info.getType(), from, to, x+xt+5, y+yt+h+7, dicColor, textSize));
-			h += textSize + 10;
-			if (info.getType().length()*textW > w)
-				w = info.getType().length()*textW;
-		}
-
-		if (info.getAPI() != null && !info.getAPI().equals("")) {
-			buff.append(drawText(info.getAPI(), from, to, x+xt, y+yt+h, dicColor, textSize));
-			h += textSize;
-			if (info.getAPI().length()*textW > w)
-				w = info.getAPI().length()*textW;
-		}
-
-		if (info.getTrans() != null && !info.getTrans().equals("")) {
-			String[] trans = info.getTrans(maxw);
-
-			for (String tran : trans) {
-				buff.append(drawText(tran, from, to, x+xt, y+yt+h, dicColor, textSize));
-				h += textSize;
-				if (info.getTrans().length()*textW > w)
-					w = info.getTrans().length()*textW;
-			}
-		}
-
-		return new StringBuilder(drawBox(from, to, x, y, w+xt*2, h+yt*2, boxColor, boxCapacity, -1))
-				.append(buff.toString())
-				.toString();
-	}
-*/
-
-	private BufferedImage drawWordInfoImage(WordInfo info) throws Exception {
-		// Color
-		Color wordColor = new Color(247, 173, 70), apiColor = Color.WHITE, typeColor = Color.WHITE, transColor = Color.WHITE,
-				borderColor = Color.WHITE, boxColor = new Color(0, 0, 0, 0x88);
+		Color borderColor = Color.WHITE, boxColor = new Color(0, 0, 0, opacity);
 
 		// Font
 	    Font dynamicFont1 = new Font("Corbel", Font.BOLD,  63);
 	    Font dynamicFont2 = new Font("Arial",  Font.PLAIN, 32);
 	    Font dynamicFont3 = new Font("Arial",  Font.PLAIN, 30);
 	    Font dynamicFont4 = new Font("Tahoma", Font.PLAIN, 35);
+
+	    // minw
+	    int minw = 300;
 
 	    // Calc w, h
 	    Canvas c = new Canvas();
@@ -336,7 +160,7 @@ public class VideoSubExecute {
 	    }
 
 	    // width of image
-	    int w = Math.max(w1, w3)+60;
+	    int w = Math.max(minw, Math.max(w1, w3)+60);
 
 	    String[] trans = info.getTrans(w-60, c.getFontMetrics(dynamicFont4));
 	    
@@ -362,7 +186,7 @@ public class VideoSubExecute {
 			g.setStroke(new BasicStroke(2f));
 			g.drawRoundRect(30, 25+h1, w2, 50, 20, 20);
 
-			g.setColor(apiColor);
+			g.setColor(typeColor);
 		    g.setFont(dynamicFont2);
 			g.drawString(api, 40, 50+h1-h2/2+g.getFontMetrics().getAscent());
 		}
@@ -386,7 +210,7 @@ public class VideoSubExecute {
 
 	    // trans
 		if (trans != null) {
-			g.setColor(transColor);
+			g.setColor(typeColor);
 		    g.setFont(dynamicFont4);
 
 			int yt = 95+h1;
@@ -407,14 +231,15 @@ public class VideoSubExecute {
 	 * @param info
 	 * @param from
 	 * @param to
+	 * @param opacity
 	 * @param x
 	 * @param y
 	 * @param anchor
 	 * @return
 	 * @throws Exception 
 	 */
-	private String drawWordInfo(WordInfo info, double from, double to, int x, int y, float scale, File tmpDir) throws Exception {
-		BufferedImage wordImage = drawWordInfoImage(info);
+	private String drawWordInfo(WordInfo info, double from, double to, float opacity, int x, int y, int vw, int vh, Color wordColor, Color typeColor, File tmpDir) throws Exception {
+		BufferedImage wordImage = drawWordInfoImage(info, wordColor, typeColor, opacity);
 
 		// Write image
 		File wordFile = FileUtil.matchFileName(tmpDir.getPath(), info.getWordDictionary()+".png");
@@ -423,8 +248,10 @@ public class VideoSubExecute {
 		if (to - from < textTime)
 			to = from + textTime;
 
-		x = x - wordImage.getWidth()/2;
-		y = y - wordImage.getHeight()/2;
+		x = x - wordImage.getWidth()/2;  if (x < 0) x = 20; if (x > vw) x = vw - wordImage.getWidth()  - 20;
+		y = y - wordImage.getHeight()/2; if (y < 0) y = 20; if (y > vh) y = vh - wordImage.getHeight() - 20;
+
+		float scale = (float)vw / 1280;
 
 		return new StringBuilder()
 				.append("[in];")
@@ -435,62 +262,57 @@ public class VideoSubExecute {
 				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
 				.toString();
 	}
-/*
-	private BufferedImage drawSumWordImage(List<WordInfo> list, int w, int h) throws Exception {
-	    // Image
-		BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D g = (Graphics2D) img.getGraphics();
 
-		// Clear
-		g.setComposite(AlphaComposite.Clear);
-		g.fillRect(0, 0, w, h);
-
-		// Reset composite
-		g.setComposite(AlphaComposite.Src);
-
-		// Draw image
-		BufferedImage img2 = list.get(0).getImage();
-		g.drawImage(img2, w/10, h/10, null);
-
-		img2 = list.get(1).getImage();
-		g.drawImage(img2, w/10, h-h/10-img2.getHeight(), null);
-
-		img2 = list.get(2).getImage();
-		g.drawImage(img2, w-w/10-img2.getWidth(), h/10, null);
-
-		img2 = list.get(3).getImage();
-		g.drawImage(img2, w-w/10-img2.getWidth(), h-h/10-img2.getHeight(), null);
-
-		return img;
-	}
-
-	private String drawSumWord(List<WordInfo> list, double from, double to, int w, int h, File tmpDir) throws Exception {
-		BufferedImage wordImage = drawSumWordImage(list, w, h);
-
-		// Write image
-		File wordFile = FileUtil.matchFileName(tmpDir.getPath(), "sum.png");
-		ImageIO.write(wordImage, "PNG", wordFile);
-
-		return new StringBuilder()
-				.append("[in];")
-				.append("movie=input/").append(tmpDir.getName()).append("/").append(wordFile.getName())
-				.append("[word];")
-				.append("[in][word]overlay=").append(0).append(":").append(0)
-				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
-				.toString();
-	}
-*/
+	/**
+	 * Check and mk input output dir
+	 */
 	private void checkInOutFolder() {
 		FileUtil.checkAndMKDir(inFolder);
 		FileUtil.checkAndMKDir(outFolder);
 	}
 
-	private String srtLyric(SongLyric songLyric) throws Exception {
-		return LyricConverter.writeSRT(songLyric, "red");
+	/**
+	 * Normalize config
+	 * @param config
+	 */
+	private Config fullConfig(Config config) {
+		if (config == null)
+			config = new Config();
+
+		// lyric
+		if (config.getLyricOpacity() <= 0 || config.getLyricOpacity() >= 1)
+			config.setLyricOpacity(0.5F);
+		if (config.getLyricSize() <= 0)
+			config.setLyricSize(20);
+		if (config.getLyricTransSize() == 0)
+			config.setLyricTransSize(config.getLyricSize()*3/4);
+		else if (config.getLyricTransSize() < 0)
+			config.setLyricTransSize(config.getLyricSize()*(-config.getLyricTransSize()));
+		if (config.getLyricColor() == null)
+			config.setLyricColor(Color.white);
+		if (config.getLyricMarkColor() == null)
+			config.setLyricMarkColor(Color.red);
+
+		// word box
+		if (config.getWordBoxOpacity() <= 0 || config.getWordBoxOpacity() >= 1)
+			config.setWordBoxOpacity(0.5F);
+		if (config.getWordBoxPrimaryColor() == null)
+			config.setWordBoxPrimaryColor(new Color(247, 173, 70));
+		if (config.getWordBoxSecondaryColor() == null)
+			config.setWordBoxSecondaryColor(Color.white);
+		if (config.getWordBoxX() == 0)
+			config.setWordBoxX(-0.1F);
+		if (config.getWordBoxY() == 0)
+			config.setWordBoxY(-0.5F);
+		
+		return config;
 	}
 
 	@Async("threadPoolExecutor")
-	public void doAddSubToVideo(String track, String artist, String inputFileName, String inputSubName, TaskExecute execute) {
+	public void doAddSubToVideo(String track, String artist, String inputFileName, String inputSubName, Config config, TaskExecute execute) {
+		// Config
+		config = fullConfig(config);
+
 		// Input and output file
 		File input, sub, tmpDir, output;
 
@@ -543,7 +365,7 @@ public class VideoSubExecute {
 			}
 
 			// Convert it to srt
-			String lyric = srtLyric(songLyric);
+			String lyric = LyricConverter.writeSRT(songLyric, config.getLyricTransSize(), config.getLyricMarkColor());
 
 			// Write subtitle to file
 			FileOutputStream fos = null;
@@ -577,21 +399,21 @@ public class VideoSubExecute {
 				//
 				System.out.println("Do FFmpeg");
 
-				int width  = stream.width*2/2;
-				int height = stream.height*2/2;
-
-				float scale = (float)width / 1280;
+				int width  = (config.getW() > 0 ? config.getW() : stream.width)*2/2;
+				int height = (config.getH() > 0 ? config.getH() : stream.height)*2/2;
 
 				// Make filter
 				StringBuilder vfilter = new StringBuilder("scale=").append(width).append(":").append(height).append("[in];[in]")
-										.append(addSubtitle(sub));
+										.append(addSubtitle(sub, config.getLyricColor(), config.getLyricSize(), config.getLyricOpacity()));
+
+				int x = (int) (config.getWordBoxX() < 0 ? width*(-config.getWordBoxX()) : config.getWordBoxX());
+				int y = (int) (config.getWordBoxY() < 0 ? height*(-config.getWordBoxY()) : config.getWordBoxY());
+				float opacity = config.getWordBoxOpacity();
 
 				for (Lyric l : songLyric.getSong()) {
 					if (l.getMark() != null)
-						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width-width/10, height/2, scale, tmpDir));
+						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), opacity, x, y, width, height, config.getWordBoxPrimaryColor(), config.getWordBoxSecondaryColor(), tmpDir));
 				}
-
-				vfilter.append(addLogo(width, height));
 
 				// Do ffmpeg
 				FFmpegBuilder builder = ffmpeg.builder()
@@ -659,7 +481,10 @@ public class VideoSubExecute {
 	}
 
 	@Async("threadPoolExecutor")
-	public void doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputMusicFileName, String inputSubName, TaskExecute execute) {
+	public void doCreateSubVideoFromMusic(String track, String artist, String inputBackName, String inputMusicFileName, String inputSubName, Config config, TaskExecute execute) {
+		// Config
+		config = fullConfig(config);
+
 		// Input and output file
 		File input, back, sub, tmpDir, output;
 
@@ -707,7 +532,7 @@ public class VideoSubExecute {
 			tmpDir = FileUtil.matchDirName(inFolder, input.getName().substring(0, input.getName().length()-4)+"_tmp");
 
 			// sub file
-			sub = new File(tmpDir.getPath().replace("_tmp", ".srt"));
+			sub = new File(tmpDir.getPath().replace("_tmp", "")+".srt");
 
 			// If sub file specific
 			SongLyric songLyric = null;
@@ -733,7 +558,7 @@ public class VideoSubExecute {
 			}
 
 			// Convert it to srt
-			String lyric = srtLyric(songLyric);
+			String lyric = LyricConverter.writeSRT(songLyric, config.getLyricTransSize(), config.getLyricMarkColor());
 
 			// Write subtitle to file
 			FileOutputStream fos = null;
@@ -767,7 +592,7 @@ public class VideoSubExecute {
 			boolean mp4 = !servletContext.getMimeType(back.getName()).startsWith("image");
 
 			// output file
-			output = new File(outFolder+tmpDir.getName()+".mp4");
+			output = new File(outFolder+tmpDir.getName().replace("_tmp", "")+".mp4");
 
 			try {
 				//
@@ -784,10 +609,8 @@ public class VideoSubExecute {
 				//
 				System.out.println("Do FFmpeg");
 
-				int width  = stream2.width/2*2;
-				int height = stream2.height/2*2;
-
-				float scale = (float)width / 1280;
+				int width  = (config.getW() > 0 ? config.getW() : stream2.width)*2/2;
+				int height = (config.getH() > 0 ? config.getH() : stream2.height)*2/2;
 
 				// Do ffmpeg
 				FFmpegBuilder builder = ffmpeg.builder()
@@ -799,16 +622,16 @@ public class VideoSubExecute {
 
 				vfilter
 					.append("[in];[in]")
-					.append(addSubtitle(sub));
+					.append(addSubtitle(sub, config.getLyricColor(), config.getLyricSize(), config.getLyricOpacity()));
+
+				int x = (int) (config.getWordBoxX() < 0 ? width*(-config.getWordBoxX()) : config.getWordBoxX());
+				int y = (int) (config.getWordBoxY() < 0 ? height*(-config.getWordBoxY()) : config.getWordBoxY());
+				float opacity = config.getWordBoxOpacity();
 
 				for (Lyric l : songLyric.getSong()) {
 					if (l.getMark() != null)
-						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), width-width/10, height/2, scale, tmpDir));
+						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), opacity, x, y, width, height, config.getWordBoxPrimaryColor(), config.getWordBoxSecondaryColor(), tmpDir));
 				}
-
-//				Lyric l = songLyric.getSong().get(songLyric.getSong().size()-1);
-//				vfilter.append(drawSumWord(songLyric.getMark(), l.getToTimestamp(), l.getToTimestamp()+20, width, height, tmpDir));
-				vfilter.append(addLogo(width, height));
 
 				builder.setComplexFilter(vfilter.toString());
 

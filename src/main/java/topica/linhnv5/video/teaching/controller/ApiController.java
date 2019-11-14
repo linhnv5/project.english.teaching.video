@@ -1,15 +1,22 @@
 package topica.linhnv5.video.teaching.controller;
 
+import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.reflect.Field;
+import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import javax.servlet.ServletContext;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
@@ -36,11 +43,11 @@ import net.bramp.ffmpeg.probe.FFmpegFormat;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.probe.FFmpegStream;
 import topica.linhnv5.video.teaching.controller.response.TaskInfo;
-import topica.linhnv5.video.teaching.controller.request.Config;
 import topica.linhnv5.video.teaching.controller.request.Music;
 import topica.linhnv5.video.teaching.controller.response.TaskCreate;
 import topica.linhnv5.video.teaching.lyric.LyricConverter;
 import topica.linhnv5.video.teaching.lyric.SongLyric;
+import topica.linhnv5.video.teaching.model.Config;
 import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.model.TaskExecute;
 import topica.linhnv5.video.teaching.service.TaskService;
@@ -92,6 +99,115 @@ public class ApiController {
 		return MediaType.APPLICATION_OCTET_STREAM;
 	}
 
+	private Color getColor(String inColor) {
+		if (inColor != null && !inColor.equals("")) {
+			try {
+				// get color by hex or octal value
+				return Color.decode(inColor);
+			} catch (NumberFormatException nfe) {
+				// if we can't decode lets try to get it by name
+				try {
+					// try to get a color by name using reflection
+					final Field f = Color.class.getField(inColor);
+
+			        return (Color) f.get(null);
+				} catch (Exception ce) {
+				}
+			}
+		}
+		return null;
+	}
+
+	@SuppressWarnings("resource")
+	private Config readConfig(File configFile) {
+		try {
+			// Input
+			FileInputStream is = new FileInputStream(configFile);
+
+			// Create Workbook instance holding reference to .xlsx file
+	        XSSFWorkbook workbook = new XSSFWorkbook(is);
+
+	        // Get first/desired sheet from the workbook
+	        XSSFSheet sheet = workbook.getSheetAt(0);
+
+	        // Config
+	        Config config = new Config();
+
+	        // Header
+	        Row header = sheet.getRow(0);
+
+	        // Data
+	        Row data = sheet.getRow(1);
+
+	        // Iterate through each cells one by one
+	        Iterator<Cell> cellIterator = header.iterator();
+
+	        while (cellIterator.hasNext()) {
+	        	Cell h = cellIterator.next();
+	        	Cell d = data.getCell(h.getColumnIndex());
+	  
+	        	System.out.println("Column: "+h.getStringCellValue());
+	        	
+	        	if (d == null)
+	        		continue;
+	        	
+	        	switch (h.getStringCellValue().toLowerCase()) {
+	        		case "w":
+	        			config.setW((int) d.getNumericCellValue());
+	        			break;
+
+	        		case "h":
+	        			config.setH((int) d.getNumericCellValue());
+	        			break;
+
+	        		case "lyricopacity":
+	        			config.setLyricOpacity((float) d.getNumericCellValue());
+	        			break;
+	        		
+	        		case "lyricsize":
+	        			config.setLyricSize((float) d.getNumericCellValue());
+	        			break;
+	        		
+	        		case "lyrictranssize":
+	        			config.setLyricTransSize((float) d.getNumericCellValue());
+	        			break;
+	        		
+	        		case "lyriccolor":
+	        			config.setLyricColor(getColor(d.getStringCellValue()));
+	        			break;
+	        		
+	        		case "lyricmarkcolor":
+	        			config.setLyricMarkColor(getColor(d.getStringCellValue()));
+	        			break;
+	        		
+	        		case "wordboxopacity":
+	        			config.setWordBoxOpacity((float) d.getNumericCellValue());
+	        			break;
+	        		
+	        		case "wordboxprimarycolor":
+	        			config.setWordBoxPrimaryColor(getColor(d.getStringCellValue()));
+	        			break;
+
+	        		case "wordboxsecondarycolor":
+	        			config.setWordBoxSecondaryColor(getColor(d.getStringCellValue()));
+	        			break;
+	       
+	        		case "wordboxx":
+	        			config.setWordBoxX((float) d.getNumericCellValue());
+	        			break;
+	        		
+	        		case "wordboxy":
+	        			config.setWordBoxY((float) d.getNumericCellValue());
+	        			break;
+				}
+	        }
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return null;
+	}
+
 	@PostMapping(path = "/create.fromvideo")
 	@ApiOperation(value = "Create subbing video task from video", response = TaskCreate.class, tags = "CreateTask")
 	@ApiResponses({
@@ -110,11 +226,12 @@ public class ApiController {
 			@ApiParam(value = "Video input", required = true)
 			@RequestParam(value = "video", required = true)
 				MultipartFile video,
-			@ApiParam(value = "Subtitle file (csv)", required = false)		
+			@ApiParam(value = "Subtitle file (excel)", required = false)		
 			@RequestParam(value = "sub", required = false)
 				MultipartFile sub,
-			@ModelAttribute
-				Config config
+			@ApiParam(value = "Config file (excel)", required = false)		
+			@RequestParam(value = "config", required = false)
+				MultipartFile config
 		) {
 		// The response
 		TaskCreate response = null;
@@ -175,8 +292,16 @@ public class ApiController {
 			// Print the track name and artist name
 			System.out.println("Request sub video track: "+trackName+" artist: "+artistName);
 
+			// Check config
+			Config sconfig = null;
+			if (config != null) {
+				f = FileUtil.matchFileName(inFolder, config.getOriginalFilename());
+				config.transferTo(f);
+				sconfig = readConfig(f);
+			}
+
 			// Create and return a task
-			Task task = videoSubService.addSubToVideo(trackName, artistName, inFile, inSub);
+			Task task = videoSubService.addSubToVideo(trackName, artistName, inFile, inSub, sconfig);
 
 			// 
 			System.out.println("   return task id="+task.getId());
@@ -213,8 +338,9 @@ public class ApiController {
 			@ApiParam(value = "Subtitle file (csv)", required = false)
 			@RequestParam(value = "sub", required = false)
 				MultipartFile sub,
-			@ModelAttribute
-				Config config
+			@ApiParam(value = "Config file (excel)", required = false)		
+			@RequestParam(value = "config", required = false)
+				MultipartFile config
 			) {
 		// The response
 		TaskCreate response = null;
@@ -248,8 +374,16 @@ public class ApiController {
 			// Print the track name and artist name
 			System.out.println("Request sub image track: "+music.getTitle()+" artist: "+music.getArtist());
 
+			// Check config
+			Config sconfig = null;
+			if (config != null) {
+				f = FileUtil.matchFileName(inFolder, config.getOriginalFilename());
+				config.transferTo(f);
+				sconfig = readConfig(f);
+			}
+
 			// Create and return a task
-			Task task = videoSubService.createSubVideoFromMusic(music.getTitle(), music.getArtist(), inFile, inMusic, inSub);
+			Task task = videoSubService.createSubVideoFromMusic(music.getTitle(), music.getArtist(), inFile, inMusic, inSub, sconfig);
 
 			// Task id
 			System.out.println("   return task id="+task.getId());

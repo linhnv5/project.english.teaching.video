@@ -1,5 +1,6 @@
 package topica.linhnv5.video.teaching.lyric;
 
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -297,6 +298,8 @@ public class LyricConverter {
 	 * 
 	 * @param inSong     The object of SongLyric that hold entire lyric
 	 * @param inFilename The filename that it will write to
+	 * @param subSize    Size of second sub
+	 * @param markColor  Color of mark text
 	 * 
 	 * @return Output to the .srt file
 	 * 
@@ -304,7 +307,7 @@ public class LyricConverter {
 	 * @version 1.0 (10/6/2019)
 	 * @throws Exception 
 	 *********************************************************************/
-	public static String writeSRT(SongLyric inSongLyric, String markColor) throws Exception {
+	public static String writeSRT(SongLyric inSongLyric, float subSize, Color markColor) throws Exception {
 		// Define data structure
 		int i, from_hours, from_minutes, from_seconds, from_miliseconds, to_hours, to_minutes, to_seconds,
 				to_miliseconds;
@@ -355,7 +358,7 @@ public class LyricConverter {
 			buff.append(String.format("%02d", to_seconds));
 			buff.append(",");
 			buff.append(String.format("%03d", to_miliseconds)).append('\n');
-			buff.append(lyric.getLyric(markColor)).append('\n');
+			buff.append(lyric.getLyric(markColor, subSize)).append('\n');
 			buff.append('\n');
 		}
 

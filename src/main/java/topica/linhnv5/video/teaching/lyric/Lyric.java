@@ -1,5 +1,6 @@
 package topica.linhnv5.video.teaching.lyric;
 
+import java.awt.Color;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.util.StringUtils;
@@ -87,18 +88,37 @@ public class Lyric {
 	 * @author IntelleBitnify
 	 * @version 1.0 (10/6/2019)
 	 ************************************************************/
-	public String getLyric(String markColor) {
+	public String getLyric(Color markColor, float subSize) {
 		StringBuilder buff = new StringBuilder();
-		buff.append(this.mark != null ? 
-				this.lyric.replaceAll(this.mark.getWord(), "<b><font color=\""+markColor+"\">"+this.mark.getWord()+"</font></b>")
-				: this.lyric);
+
+		if (this.mark == null)
+			buff.append(this.lyric);
+		else {
+			String color = "#"+Integer.toHexString(markColor.getRGB());
+			String[] aLyric = lyric.split(" ");
+			String[] aMark = this.mark.getWord().split(" ");
+
+		loop1:
+			for (int i = 0; i < aLyric.length; i++) {
+				for (int j = 0; j < aMark.length; j++) {
+					if (i+j >= aLyric.length || !aLyric[i+j].equals(aMark[j])) {
+						buff.append(aLyric[i]);
+						continue loop1;
+					}
+				}
+				i += aMark.length-1;
+				buff.append("<b><font color=\""+color+"\">").append(this.mark.getWord()).append("</font></b>");
+			}
+		}
+
 		if (this.lyricTrans != null) {
 			buff.append("\n")
-				.append("<font size=10>")
+				.append("<font size=").append(subSize).append(">")
 				.append(this.lyricTrans)
 				.append("</font>")
 				;
 		}
+
 		return buff.toString();
 	}
 

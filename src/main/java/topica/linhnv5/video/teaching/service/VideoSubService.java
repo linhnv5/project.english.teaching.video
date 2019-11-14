@@ -1,6 +1,7 @@
 package topica.linhnv5.video.teaching.service;
 
 import topica.linhnv5.video.teaching.lyric.SongLyric;
+import topica.linhnv5.video.teaching.model.Config;
 import topica.linhnv5.video.teaching.model.Task;
 
 /**
@@ -17,7 +18,7 @@ public interface VideoSubService {
 	 * @return              Task info of add sub video
 	 * @throws VideoSubException
 	 */
-	public Task addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName) throws VideoSubException;
+	public Task addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName, Config config) throws VideoSubException;
 
 	/**
 	 * Input chart name, artist name, dowload subtitle, mp3 file and create a video subbing
@@ -26,7 +27,7 @@ public interface VideoSubService {
 	 * @return       Task info of create mp3
 	 * @throws VideoSubException
 	 */
-	public Task createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputMusicFileName, String inputSubFileName) throws VideoSubException;
+	public Task createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputMusicFileName, String inputSubFileName, Config config) throws VideoSubException;
 
 	/**
 	 * Input chart name, artist name, dowload subtitle

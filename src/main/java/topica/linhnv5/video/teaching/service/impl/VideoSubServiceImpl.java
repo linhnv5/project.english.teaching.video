@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import topica.linhnv5.video.teaching.lyric.SongLyric;
+import topica.linhnv5.video.teaching.model.Config;
 import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.model.TaskExecute;
 import topica.linhnv5.video.teaching.service.TaskService;
@@ -26,7 +27,7 @@ public class VideoSubServiceImpl implements VideoSubService {
 	private VideoSubExecute execute;
 
 	@Override
-	public Task addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName) throws VideoSubException {
+	public Task addSubToVideo(String track, String artist, String inputFileName, String inputSubFileName, Config config) throws VideoSubException {
 		// Create task
 		TaskExecute task = new TaskExecute();
 
@@ -35,7 +36,7 @@ public class VideoSubServiceImpl implements VideoSubService {
 			taskService.addTask(task);
 
 			// Create async job
-			execute.doAddSubToVideo(track, artist, inputFileName, inputSubFileName, task);
+			execute.doAddSubToVideo(track, artist, inputFileName, inputSubFileName, config, task);
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw new VideoSubException(e.getMessage());
@@ -46,7 +47,7 @@ public class VideoSubServiceImpl implements VideoSubService {
 	}
 
 	@Override
-	public Task createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputMusicFileName, String inputSubFileName) throws VideoSubException {
+	public Task createSubVideoFromMusic(String track, String artist, String inputBackFileName, String inputMusicFileName, String inputSubFileName, Config config) throws VideoSubException {
 		// Create task
 		TaskExecute task = new TaskExecute();
 
@@ -55,7 +56,7 @@ public class VideoSubServiceImpl implements VideoSubService {
 			taskService.addTask(task);
 
 			// Create async job
-			execute.doCreateSubVideoFromMusic(track, artist, inputBackFileName, inputMusicFileName, inputSubFileName, task);
+			execute.doCreateSubVideoFromMusic(track, artist, inputBackFileName, inputMusicFileName, inputSubFileName, config, task);
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw new VideoSubException(e.getMessage());
