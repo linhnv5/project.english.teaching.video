@@ -146,8 +146,6 @@ public class ApiController {
 	        	Cell h = cellIterator.next();
 	        	Cell d = data.getCell(h.getColumnIndex());
 	  
-	        	System.out.println("Column: "+h.getStringCellValue());
-	        	
 	        	if (d == null)
 	        		continue;
 	        	
@@ -201,6 +199,8 @@ public class ApiController {
 	        			break;
 				}
 	        }
+	    
+	        return config;
 		} catch(Exception e) {
 			e.printStackTrace();
 		}

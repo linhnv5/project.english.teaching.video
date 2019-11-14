@@ -275,6 +275,8 @@ public class VideoSubExecute {
 	 * @param config
 	 */
 	private Config fullConfig(Config config) {
+		System.out.println("Config: "+config);
+
 		if (config == null)
 			config = new Config();
 
@@ -303,7 +305,18 @@ public class VideoSubExecute {
 			config.setWordBoxX(-0.1F);
 		if (config.getWordBoxY() == 0)
 			config.setWordBoxY(-0.5F);
-		
+
+		System.out.println("Lopacity: "+config.getLyricOpacity());
+		System.out.println("Lsize: "+config.getLyricSize());
+		System.out.println("Ltsize: "+config.getLyricTransSize());
+		System.out.println("lco: "+config.getLyricColor());
+		System.out.println("lm: "+config.getLyricMarkColor());
+
+		System.out.println("wopacity: "+config.getWordBoxOpacity());
+		System.out.println("pcolor: "+config.getWordBoxPrimaryColor());
+		System.out.println("scolor: "+config.getWordBoxSecondaryColor());
+		System.out.println("x: "+config.getWordBoxX()+" y: "+config.getWordBoxY());
+
 		return config;
 	}
 
