@@ -558,6 +558,7 @@ public class VideoSubExecute {
 			}
 
 			// Convert it to srt
+			System.out.println("lyric color="+Integer.toHexString(config.getLyricColor().getRGB())+" mark color="+Integer.toHexString(config.getLyricMarkColor().getRGB()));
 			String lyric = LyricConverter.writeSRT(songLyric, config.getLyricTransSize(), config.getLyricMarkColor());
 
 			// Write subtitle to file
