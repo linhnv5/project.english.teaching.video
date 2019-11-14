@@ -161,6 +161,8 @@ public class LyricConverter {
 			lrc.setLyricTrans(csv.getLyricTrans() == null ? "" : csv.getLyricTrans());
 
 			if (csv.getMark() != null && !csv.getMark().equals("")) {
+				boolean add = true;
+
 				WordInfo wordInfo = new WordInfo(csv.getMark());
 				wordInfo.setWordDictionary(csv.getMarkDictionary());
 				wordInfo.setType(csv.getType());
@@ -170,21 +172,26 @@ public class LyricConverter {
 				if (wordInfo.getWordDictionary() == null || wordInfo.getType() == null || wordInfo.getAPI() == null || wordInfo.getTrans() == null) {
 					WordInfo wordInfo2 = dictionary.searchWord(wordInfo.getWord());
 
-					if (wordInfo.getWordDictionary() == null)
-						wordInfo.setWordDictionary(wordInfo2.getWordDictionary());
+					if (wordInfo2 != null) {
+						if (wordInfo.getWordDictionary() == null)
+							wordInfo.setWordDictionary(wordInfo2.getWordDictionary());
 
-					if (wordInfo.getType() == null)
-						wordInfo.setType(wordInfo2.getType());
-					
-					if (wordInfo.getAPI() == null)
-						wordInfo.setAPI(wordInfo2.getAPI());
-					
-					if (wordInfo.getTrans() == null)
-						wordInfo.setTrans(wordInfo2.getTrans());
+						if (wordInfo.getType() == null)
+							wordInfo.setType(wordInfo2.getType());
+						
+						if (wordInfo.getAPI() == null)
+							wordInfo.setAPI(wordInfo2.getAPI());
+						
+						if (wordInfo.getTrans() == null)
+							wordInfo.setTrans(wordInfo2.getTrans());
+					} else
+						add = false;
 				}
 
-				inSongLyric.getMark().add(wordInfo);
-				lrc.setMark(wordInfo);
+				if (add) {
+					inSongLyric.getMark().add(wordInfo);
+					lrc.setMark(wordInfo);
+				}
 			}
 
 			inSongLyric.addLyric(lrc);
@@ -232,6 +239,8 @@ public class LyricConverter {
 
 			String mark;
 			if (cell != null && (mark = cell.getStringCellValue()) != null && !mark.equals("")) {
+				boolean add = true;
+
 				WordInfo wordInfo = new WordInfo(mark);
 
 				cell = row.getCell(cellnum++);
@@ -265,11 +274,14 @@ public class LyricConverter {
 						
 						if (wordInfo.getTrans() == null)
 							wordInfo.setTrans(wordInfo2.getTrans());
-					}
+					} else
+						add = false;
 				}
 
-				inSongLyric.getMark().add(wordInfo);
-				lrc.setMark(wordInfo);
+				if (add) {
+					inSongLyric.getMark().add(wordInfo);
+					lrc.setMark(wordInfo);
+				}
 			}
 
 			inSongLyric.addLyric(lrc);
