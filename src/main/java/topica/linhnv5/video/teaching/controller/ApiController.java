@@ -1,11 +1,9 @@
 package topica.linhnv5.video.teaching.controller;
 
-import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
@@ -23,12 +21,12 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.google.common.net.HttpHeaders;
@@ -52,6 +50,7 @@ import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.model.TaskExecute;
 import topica.linhnv5.video.teaching.service.TaskService;
 import topica.linhnv5.video.teaching.service.VideoSubService;
+import topica.linhnv5.video.teaching.util.ColorUtil;
 import topica.linhnv5.video.teaching.util.FileUtil;
 
 /**
@@ -59,7 +58,7 @@ import topica.linhnv5.video.teaching.util.FileUtil;
  * Return a task id if success or return error
  * @author ljnk975
  */
-@Controller
+@RestController
 @RequestMapping(path = "/api")
 @Api(tags = "CreateVideoAPI")
 public class ApiController {
@@ -97,25 +96,6 @@ public class ApiController {
 		} catch (Exception e) {
 		}
 		return MediaType.APPLICATION_OCTET_STREAM;
-	}
-
-	private Color getColor(String inColor) {
-		if (inColor != null && !inColor.equals("")) {
-			try {
-				// get color by hex or octal value
-				return Color.decode(inColor);
-			} catch (NumberFormatException nfe) {
-				// if we can't decode lets try to get it by name
-				try {
-					// try to get a color by name using reflection
-					final Field f = Color.class.getField(inColor);
-
-			        return (Color) f.get(null);
-				} catch (Exception ce) {
-				}
-			}
-		}
-		return null;
 	}
 
 	@SuppressWarnings("resource")
@@ -171,11 +151,11 @@ public class ApiController {
 	        			break;
 	        		
 	        		case "lyriccolor":
-	        			config.setLyricColor(getColor(d.getStringCellValue()));
+	        			config.setLyricColor(ColorUtil.decodeColor(d.getStringCellValue()));
 	        			break;
 	        		
 	        		case "lyricmarkcolor":
-	        			config.setLyricMarkColor(getColor(d.getStringCellValue()));
+	        			config.setLyricMarkColor(ColorUtil.decodeColor(d.getStringCellValue()));
 	        			break;
 	        		
 	        		case "wordboxopacity":
@@ -183,11 +163,11 @@ public class ApiController {
 	        			break;
 	        		
 	        		case "wordboxprimarycolor":
-	        			config.setWordBoxPrimaryColor(getColor(d.getStringCellValue()));
+	        			config.setWordBoxPrimaryColor(ColorUtil.decodeColor(d.getStringCellValue()));
 	        			break;
 
 	        		case "wordboxsecondarycolor":
-	        			config.setWordBoxSecondaryColor(getColor(d.getStringCellValue()));
+	        			config.setWordBoxSecondaryColor(ColorUtil.decodeColor(d.getStringCellValue()));
 	        			break;
 	       
 	        		case "wordboxx":
@@ -196,6 +176,10 @@ public class ApiController {
 	        		
 	        		case "wordboxy":
 	        			config.setWordBoxY((float) d.getNumericCellValue());
+	        			break;
+	        			
+	        		case "wordboxtime":
+	        			config.setWordBoxTime((float) d.getNumericCellValue());
 	        			break;
 				}
 	        }
@@ -346,10 +330,6 @@ public class ApiController {
 		TaskCreate response = null;
 
 		try {
-			// Check if track and artist exists
-			if ((file == null || sub == null) && (music.getTitle() == null || music.getArtist() == null))
-				throw new Exception("Can't get information about music name and music artist!");
-
 			// Check request
 			String inFile = null; File f;
 			if (background != null) {
@@ -369,10 +349,32 @@ public class ApiController {
 			if (file != null) {
 				inMusic = (f = FileUtil.matchFileName(inFolder, file.getOriginalFilename())).getName();
 				file.transferTo(f);
+
+				// Get info of music file
+				FFmpegProbeResult probeResult = ffprobe.probe(f.getPath());
+
+				FFmpegFormat format = probeResult.getFormat();
+				System.out.format("%nFile: '%s' ; Format: '%s' ; Duration: %.3fs\n", 
+					format.filename, 
+					format.format_long_name,
+					format.duration
+				);
+
+				// Check if artist not define
+				if (music.getArtist() == null)
+					music.setArtist(format.tags.get("artist"));
+				
+				// Check if track not define
+				if (music.getTitle() == null)
+					music.setTitle(format.tags.get("title"));
 			}
 
 			// Print the track name and artist name
 			System.out.println("Request sub image track: "+music.getTitle()+" artist: "+music.getArtist());
+
+			// Check if track and artist exists
+			if ((inMusic == null || inSub == null) && (music.getTitle() == null || music.getArtist() == null))
+				throw new Exception("Can't get information about music name and music artist!");
 
 			// Check config
 			Config sconfig = null;

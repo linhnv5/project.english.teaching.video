@@ -58,7 +58,6 @@ public class Config {
 	 */
 	private Color wordBoxSecondaryColor;
 
-
 	/**
 	 * X of wordBox
 	 */
@@ -68,6 +67,11 @@ public class Config {
 	 * Y of wordBox
 	 */
 	private float wordBoxY;
+
+	/**
+	 * Word box duration
+	 */
+	private float wordBoxTime;
 
 	/**
 	 * @return the w
@@ -235,6 +239,20 @@ public class Config {
 	 */
 	public void setWordBoxY(float wordBoxY) {
 		this.wordBoxY = wordBoxY;
+	}
+
+	/**
+	 * @return the wordBoxTime
+	 */
+	public float getWordBoxTime() {
+		return wordBoxTime;
+	}
+
+	/**
+	 * @param wordBoxTime the wordBoxTime to set
+	 */
+	public void setWordBoxTime(float wordBoxTime) {
+		this.wordBoxTime = wordBoxTime;
 	}
 
 }

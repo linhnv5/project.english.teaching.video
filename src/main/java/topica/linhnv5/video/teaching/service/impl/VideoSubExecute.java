@@ -38,6 +38,7 @@ import topica.linhnv5.video.teaching.model.Config;
 import topica.linhnv5.video.teaching.model.Music;
 import topica.linhnv5.video.teaching.model.Task;
 import topica.linhnv5.video.teaching.model.TaskExecute;
+import topica.linhnv5.video.teaching.model.WordBox;
 import topica.linhnv5.video.teaching.model.WordInfo;
 import topica.linhnv5.video.teaching.service.DictionaryService;
 import topica.linhnv5.video.teaching.service.MusicService;
@@ -82,9 +83,6 @@ public class VideoSubExecute {
 
 	@Autowired
 	private TaskService taskService;
-
-	@Value("${video.teaching.text.time}")
-	private int textTime;
 
 	/**
 	 * Add subtitle filter to video
@@ -131,7 +129,7 @@ public class VideoSubExecute {
 	    // Calc w, h
 	    Canvas c = new Canvas();
 		
-	    String word = Character.toUpperCase(info.getWordDictionary().charAt(0))+info.getWordDictionary().substring(1);
+	    String word = Character.toUpperCase(info.getWord().charAt(0))+info.getWord().substring(1);
 
 	    int w1 = c.getFontMetrics(dynamicFont1).stringWidth(word);
 		int h1 = c.getFontMetrics(dynamicFont1).getHeight();
@@ -238,19 +236,20 @@ public class VideoSubExecute {
 	 * @throws Exception 
 	 */
 	private String drawWordInfo(WordInfo info, double from, double to, float opacity, int x, int y, int vw, int vh, Color wordColor, Color typeColor, File tmpDir) throws Exception {
-		BufferedImage wordImage = drawWordInfoImage(info, wordColor, typeColor, opacity);
+		BufferedImage wordImage = info.getImage();
 
 		// Write image
-		File wordFile = FileUtil.matchFileName(tmpDir.getPath(), info.getWordDictionary()+".png");
+		File wordFile = FileUtil.matchFileName(tmpDir.getPath(), info.getWord()+".png");
 		ImageIO.write(wordImage, "PNG", wordFile);
 
-		if (to - from < textTime)
-			to = from + textTime;
-
-		x = x - wordImage.getWidth()/2;  if (x < 0) x = 20; if (x > vw) x = vw - wordImage.getWidth()  - 20;
-		y = y - wordImage.getHeight()/2; if (y < 0) y = 20; if (y > vh) y = vh - wordImage.getHeight() - 20;
-
 		float scale = (float)vw / 1280;
+		int w = (int) (wordImage.getWidth()*scale);
+		int h = (int) (wordImage.getHeight()*scale);
+
+		x -= w/2; y -= h/2;
+
+		if (x < 0) x = 20; if (x+w > vw) x = vw - w - 20;
+		if (y < 0) y = 20; if (y+h > vh) y = vh - h - 20;
 
 		return new StringBuilder()
 				.append("[in];")
@@ -260,6 +259,75 @@ public class VideoSubExecute {
 				.append("[in][word]overlay=").append(x).append(":").append(y)
 				.append(":enable='between(t,").append(from).append(",").append(to).append(")'")
 				.toString();
+	}
+
+	// Returns true if two rectangles (l1, r1) and (l2, r2) overlap 
+	private boolean doOverlap(float x1, float y1, float w1, float h1, float x2, float y2, float w2, float h2)  { 
+	    // If one rectangle is on left side of other 
+	    if (x1 >= x2+w2 || x2 >= x1+w1) 
+	        return false; 
+	  
+	    // If one rectangle is above other 
+	    if (y1 >= y2+h2 || y2 >= y1+h1) 
+	        return false; 
+	  
+	    return true; 
+	} 
+
+	private String drawMarks(SongLyric songLyric, int width, int height, float wx, float wy, float wt, float opacity, Color primaryColor, Color secondaryColor, File tmpDir) throws Exception {
+		StringBuilder buff = new StringBuilder();
+
+		float scale = (float)width / 1280;
+
+		WordBox oldMark = null;
+		for (Lyric l : songLyric.getSong()) {
+			if (l.getMark() != null) {
+				WordBox mark = l.getMark();
+
+				// X, Y Float
+				if (mark.getX() == 0)
+					mark.setX(wx);
+				
+				if (mark.getY() == 0)
+					mark.setY(wy);
+				
+				// Text duration
+				if (mark.getDuration() == 0)
+					mark.setDuration(wt);
+
+				// x, y draw
+				if (mark.getX() < 0)
+					mark.setX((-mark.getX()) * width);
+				
+				if (mark.getY() < 0)
+					mark.setY((-mark.getY()) * height);
+
+				// From
+				mark.setFrom(l.getFromTimestamp());
+				mark.setTo(l.getToTimestamp());
+
+				// Image
+				drawWordInfoImage(mark.getWordDictionary(), primaryColor, secondaryColor, opacity);
+
+				// Fix overlap
+				if (oldMark != null && mark.getFrom() < oldMark.getTo()) {
+					if (doOverlap(
+							mark.getX(), mark.getY(),
+								mark.getWordDictionary().getImage().getWidth()*scale, mark.getWordDictionary().getImage().getHeight()*scale,
+							oldMark.getX(), oldMark.getY(),
+								oldMark.getWordDictionary().getImage().getWidth()*scale, oldMark.getWordDictionary().getImage().getHeight()*scale
+							
+						)
+					)
+						mark.setX(oldMark.getX()+oldMark.getWordDictionary().getImage().getWidth()*scale/2+mark.getWordDictionary().getImage().getWidth()*scale/2);
+				}
+
+				oldMark = mark;
+				buff.append(drawWordInfo(l.getMark().getWordDictionary(), mark.getFrom(), mark.getTo(), opacity, (int)mark.getX(), (int)mark.getY(), width, height, primaryColor, secondaryColor, tmpDir));
+			}
+		}
+		
+		return buff.toString();
 	}
 
 	/**
@@ -416,16 +484,8 @@ public class VideoSubExecute {
 
 				// Make filter
 				StringBuilder vfilter = new StringBuilder("scale=").append(width).append(":").append(height).append("[in];[in]")
-										.append(addSubtitle(sub, config.getLyricColor(), config.getLyricSize(), config.getLyricOpacity()));
-
-				int x = (int) (config.getWordBoxX() < 0 ? width*(-config.getWordBoxX()) : config.getWordBoxX());
-				int y = (int) (config.getWordBoxY() < 0 ? height*(-config.getWordBoxY()) : config.getWordBoxY());
-				float opacity = config.getWordBoxOpacity();
-
-				for (Lyric l : songLyric.getSong()) {
-					if (l.getMark() != null)
-						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), opacity, x, y, width, height, config.getWordBoxPrimaryColor(), config.getWordBoxSecondaryColor(), tmpDir));
-				}
+										.append(addSubtitle(sub, config.getLyricColor(), config.getLyricSize(), config.getLyricOpacity()))
+										.append(drawMarks(songLyric, width, height, config.getWordBoxX(), config.getWordBoxY(), config.getWordBoxTime(), config.getWordBoxOpacity(), config.getWordBoxPrimaryColor(), config.getWordBoxSecondaryColor(), tmpDir));
 
 				// Do ffmpeg
 				FFmpegBuilder builder = ffmpeg.builder()
@@ -634,16 +694,8 @@ public class VideoSubExecute {
 
 				vfilter
 					.append("[in];[in]")
-					.append(addSubtitle(sub, config.getLyricColor(), config.getLyricSize(), config.getLyricOpacity()));
-
-				int x = (int) (config.getWordBoxX() < 0 ? width*(-config.getWordBoxX()) : config.getWordBoxX());
-				int y = (int) (config.getWordBoxY() < 0 ? height*(-config.getWordBoxY()) : config.getWordBoxY());
-				float opacity = config.getWordBoxOpacity();
-
-				for (Lyric l : songLyric.getSong()) {
-					if (l.getMark() != null)
-						vfilter.append(drawWordInfo(l.getMark(), l.getFromTimestamp(), l.getToTimestamp(), opacity, x, y, width, height, config.getWordBoxPrimaryColor(), config.getWordBoxSecondaryColor(), tmpDir));
-				}
+					.append(addSubtitle(sub, config.getLyricColor(), config.getLyricSize(), config.getLyricOpacity()))
+					.append(drawMarks(songLyric, width, height, config.getWordBoxX(), config.getWordBoxY(), config.getWordBoxTime(), config.getWordBoxOpacity(), config.getWordBoxPrimaryColor(), config.getWordBoxSecondaryColor(), tmpDir));
 
 				builder.setComplexFilter(vfilter.toString());
 
@@ -745,7 +797,7 @@ public class VideoSubExecute {
 			System.out.println("Mark lyric");
 
 			// Mark random
-			songLyric.markRandomText(dictionary, textTime);
+			songLyric.markRandomText(dictionary, 5);
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw new Exception("An error occur when get the lyric!");

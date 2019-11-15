@@ -20,11 +20,13 @@
 
 	<properties>
 		<java.version>1.8</java.version>
+		<jsp.version>2.3.1</jsp.version>
 		<bramp.ffmpeg.version>0.6.2</bramp.ffmpeg.version>
 		<javacpp.ffmpeg.version>3.2.1-1.3</javacpp.ffmpeg.version>
 		<jsoup.version>1.8.3</jsoup.version>
 		<swagger.version>2.9.2</swagger.version>
 		<open.csv.version>4.0</open.csv.version>
+		<poi.version>3.17</poi.version>
 		<google.translate.version>1.93.0</google.translate.version>
 	</properties>
 
@@ -53,6 +55,23 @@
 		</dependency>
 
 		<dependency>
+		    <groupId>org.apache.tomcat.embed</groupId>
+		    <artifactId>tomcat-embed-jasper</artifactId>
+		</dependency>
+ 
+ 		<dependency>
+		    <groupId>javax.servlet</groupId>
+		    <artifactId>jstl</artifactId>
+		</dependency>
+
+		<dependency>
+	        <groupId>javax.servlet.jsp</groupId>
+    	    <artifactId>javax.servlet.jsp-api</artifactId>
+        	<version>${jsp.version}</version>
+        	<scope>provided</scope>
+	    </dependency>
+
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
@@ -76,11 +95,11 @@
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.bytedeco.javacpp-presets/ffmpeg -->
-		<dependency>
+		<!--dependency>
 			<groupId>org.bytedeco.javacpp-presets</groupId>
 			<artifactId>ffmpeg</artifactId>
 			<version>${javacpp.ffmpeg.version}</version>
-		</dependency>
+		</dependency-->
 
 		<!-- https://mvnrepository.com/artifact/org.bytedeco.javacpp-presets/ffmpeg-platform -->
 		<dependency>
@@ -127,13 +146,13 @@
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi</artifactId>
-			<version>3.17</version>
+			<version>${poi.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>3.17</version>
+			<version>${poi.version}</version>
 		</dependency>
 	</dependencies>
 

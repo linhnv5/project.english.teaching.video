@@ -9,6 +9,7 @@ import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.Translation;
 import com.google.cloud.translate.Translate.TranslateOption;
 
+import topica.linhnv5.video.teaching.model.WordBox;
 import topica.linhnv5.video.teaching.model.WordInfo;
 import topica.linhnv5.video.teaching.service.DictionaryService;
 
@@ -26,7 +27,7 @@ public class Lyric {
 	private String lyric;
 	private String lyricTrans;
 
-	private WordInfo mark;
+	private WordBox mark;
 
 	/************************************************************
 	 * Default Constructor: Creates the object with default Lyric state
@@ -145,7 +146,7 @@ public class Lyric {
 	 * 
 	 * @author ljnk975
 	 */
-	public WordInfo getMark() {
+	public WordBox getMark() {
 		return mark;
 	}
 
@@ -255,7 +256,7 @@ public class Lyric {
 	 * 
 	 * @author ljnk975
 	 */
-	public void setMark(WordInfo mark) {
+	public void setMark(WordBox mark) {
 		this.mark = mark;
 	}
 
@@ -289,7 +290,7 @@ public class Lyric {
 		return lyric.equals("") || StringUtils.startsWithIgnoreCase(lyric, "Bài hát") || StringUtils.startsWithIgnoreCase(lyric, "Ca sĩ") || StringUtils.startsWithIgnoreCase(lyric, "Song") || StringUtils.startsWithIgnoreCase(lyric, "Singer");
 	}
 
-	public WordInfo markSomeText(DictionaryService dictionary) {
+	public WordBox markSomeText(DictionaryService dictionary) {
 		if (isMeta())
 			return null;
 
@@ -298,16 +299,17 @@ public class Lyric {
 		if (aLyric.length == 0)
 			return null;
 
-		int next, i = 0; WordInfo wordInfo;
+		int next, i = 0; String word; WordInfo wordInfo;
 
 		do {
 			if (++i >= aLyric.length)
 				return null;
 
 			next = ThreadLocalRandom.current().nextInt(aLyric.length);
-		} while(aLyric[next].contains("'") || (wordInfo = dictionary.searchWord(aLyric[next])) == null);
+			word = aLyric[next];
+		} while(word.contains("'") || (wordInfo = dictionary.searchWord(word)) == null);
 
-		return this.mark = wordInfo;
+		return this.mark = new WordBox(word, wordInfo);
 	}
 
 	public void translate(Translate translate) {

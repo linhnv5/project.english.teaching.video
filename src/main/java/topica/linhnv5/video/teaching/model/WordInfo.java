@@ -12,14 +12,9 @@ import java.util.List;
 public class WordInfo {
 
 	/**
-	 * The word to search
-	 */
-	private String word;
-
-	/**
 	 * Infinity word in dictionary
 	 */
-	private String wordDictionary;
+	private String word;
 
 	/**
 	 * Type of word
@@ -46,31 +41,17 @@ public class WordInfo {
 	}
 
 	/**
-	 * @return the infi
+	 * @return the word
 	 */
 	public String getWord() {
 		return word;
 	}
 
 	/**
-	 * @param word the infi to set
-	 */
-	public void setWord(String word) {
-		this.word = word;
-	}
-
-	/**
-	 * @return the word
-	 */
-	public String getWordDictionary() {
-		return wordDictionary;
-	}
-
-	/**
 	 * @param word the word to set
 	 */
 	public void setWordDictionary(String word) {
-		this.wordDictionary = word;
+		this.word = word;
 	}
 
 	/**

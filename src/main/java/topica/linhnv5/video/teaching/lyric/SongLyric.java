@@ -6,7 +6,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.cloud.translate.Translate;
 
-import topica.linhnv5.video.teaching.model.WordInfo;
+import topica.linhnv5.video.teaching.model.WordBox;
 import topica.linhnv5.video.teaching.service.DictionaryService;
 
 /**
@@ -21,7 +21,7 @@ public class SongLyric {
 	private List<Lyric> song;
 
 	// List of mark text
-	private List<WordInfo> mark;
+	private List<WordBox> mark;
 
 	/************************************************************
 	 * Default Constructor: Creates the object with default SongLyric state
@@ -32,8 +32,8 @@ public class SongLyric {
 	 * @version 1.0 (10/6/2019)
 	 ************************************************************/
 	public SongLyric() {
-		this.song = new ArrayList<Lyric>();
-		this.mark = new ArrayList<WordInfo>();
+		this.song = new ArrayList<>();
+		this.mark = new ArrayList<>();
 	}
 
 	/************************************************************
@@ -200,14 +200,14 @@ public class SongLyric {
 	/**
 	 * @return the mark
 	 */
-	public List<WordInfo> getMark() {
+	public List<WordBox> getMark() {
 		return mark;
 	}
 
 	/**
 	 * @param mark the mark to set
 	 */
-	public void setMark(List<WordInfo> mark) {
+	public void setMark(List<WordBox> mark) {
 		this.mark = mark;
 	}
 

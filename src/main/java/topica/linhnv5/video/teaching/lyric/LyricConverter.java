@@ -4,9 +4,7 @@ import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.Reader;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -17,10 +15,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import com.opencsv.CSVWriter;
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
-
+import topica.linhnv5.video.teaching.model.WordBox;
 import topica.linhnv5.video.teaching.model.WordInfo;
 import topica.linhnv5.video.teaching.service.DictionaryService;
 
@@ -128,81 +123,6 @@ public class LyricConverter {
 		}
 	}
 
-	/********************************************************************
-	 * Read the .csv file
-	 * 
-	 * @param inSong     The object of SongLyric that will hold entire lyric from
-	 *                   the file
-	 * @param inFilename The filename that it reads from
-	 * 
-	 * @return Modify the state of the SongLyric object
-	 * 
-	 * @author IntelleBitnify
-	 * @version 1.0 (10/6/2019)
-	 *********************************************************************/
-	public static SongLyric readCSV(String inLyric, DictionaryService dictionary) throws Exception {
-		// Define data structure
-		SongLyric inSongLyric = new SongLyric();
-
-		Reader reader = new StringReader(inLyric);
-
-		CsvToBean<LyricCSV> csvToBean = new CsvToBeanBuilder<LyricCSV>(reader)
-                .withType(LyricCSV.class)
-                .withIgnoreLeadingWhiteSpace(true)
-                .build();
-
-        Iterator<LyricCSV> csvUserIterator = csvToBean.iterator();
-
-        while (csvUserIterator.hasNext()) {
-        	LyricCSV csv = csvUserIterator.next();
-			Lyric lrc = new Lyric();
-			lrc.setFromTimestamp(csv.getStart());
-			lrc.setToTimestamp(csv.getEnd());
-			lrc.setLyric(csv.getLyric() == null ? "" : csv.getLyric());
-			lrc.setLyricTrans(csv.getLyricTrans() == null ? "" : csv.getLyricTrans());
-
-			if (csv.getMark() != null && !csv.getMark().equals("")) {
-				boolean add = true;
-
-				WordInfo wordInfo = new WordInfo(csv.getMark());
-				wordInfo.setWordDictionary(csv.getMarkDictionary());
-				wordInfo.setType(csv.getType());
-				wordInfo.setAPI(csv.getApi());
-				wordInfo.setTrans(csv.getTrans());
-
-				if (wordInfo.getWordDictionary() == null || wordInfo.getType() == null || wordInfo.getAPI() == null || wordInfo.getTrans() == null) {
-					WordInfo wordInfo2 = dictionary.searchWord(wordInfo.getWordDictionary() != null ? wordInfo.getWordDictionary() : wordInfo.getWord());
-
-					if (wordInfo2 != null) {
-						if (wordInfo.getWordDictionary() == null)
-							wordInfo.setWordDictionary(wordInfo2.getWordDictionary());
-
-						if (wordInfo.getType() == null)
-							wordInfo.setType(wordInfo2.getType());
-						
-						if (wordInfo.getAPI() == null)
-							wordInfo.setAPI(wordInfo2.getAPI());
-						
-						if (wordInfo.getTrans() == null)
-							wordInfo.setTrans(wordInfo2.getTrans());
-					} else
-						add = false;
-				}
-
-				if (add) {
-					inSongLyric.getMark().add(wordInfo);
-					lrc.setMark(wordInfo);
-				}
-			}
-
-			inSongLyric.addLyric(lrc);
-        }
-        
-        System.out.println("Lyric: "+inSongLyric.getSong().size());
-
-		return inSongLyric;
-	}
-
 	@SuppressWarnings("resource")
 	public static SongLyric readExcel(byte[] inLyric, DictionaryService dictionary) throws Exception {
 		// Define data structure
@@ -242,7 +162,9 @@ public class LyricConverter {
 			if (cell != null && (mark = cell.getStringCellValue()) != null && !mark.equals("")) {
 				boolean add = true;
 
-				WordInfo wordInfo = new WordInfo(mark);
+				WordBox wordBox = new WordBox(mark);
+				WordInfo wordInfo = new WordInfo(null);
+				wordBox.setWordDictionary(wordInfo);
 
 				cell = row.getCell(cellnum++);
 				if (cell != null)
@@ -260,12 +182,26 @@ public class LyricConverter {
 				if (cell != null)
 					wordInfo.setTrans(cell.getStringCellValue());
 
-				if (wordInfo.getWordDictionary() == null || wordInfo.getType() == null || wordInfo.getAPI() == null || wordInfo.getTrans() == null) {
-					WordInfo wordInfo2 = dictionary.searchWord(wordInfo.getWordDictionary() != null ? wordInfo.getWordDictionary() : wordInfo.getWord());
+				cell = row.getCell(cellnum++);
+				if (cell != null)
+					wordBox.setX((float) cell.getNumericCellValue());
 
-					if (wordInfo2 != null) {
-						if (wordInfo.getWordDictionary() == null)
-							wordInfo.setWordDictionary(wordInfo2.getWordDictionary());
+				cell = row.getCell(cellnum++);
+				if (cell != null)
+					wordBox.setY((float) cell.getNumericCellValue());
+
+				cell = row.getCell(cellnum++);
+				if (cell != null)
+					wordBox.setDuration((float) cell.getNumericCellValue());
+
+				if (wordInfo.getWord() == null || wordInfo.getType() == null || wordInfo.getAPI() == null || wordInfo.getTrans() == null) {
+					WordInfo wordInfo2 = dictionary.searchWord(wordInfo.getWord() != null ? wordInfo.getWord() : wordBox.getWord());
+
+					if (wordInfo2 == null)
+						add = false;
+					else {
+						if (wordInfo.getWord() == null)
+							wordInfo.setWordDictionary(wordInfo2.getWord());
 
 						if (wordInfo.getType() == null)
 							wordInfo.setType(wordInfo2.getType());
@@ -275,13 +211,12 @@ public class LyricConverter {
 						
 						if (wordInfo.getTrans() == null)
 							wordInfo.setTrans(wordInfo2.getTrans());
-					} else
-						add = false;
+					}
 				}
 
 				if (add) {
-					inSongLyric.getMark().add(wordInfo);
-					lrc.setMark(wordInfo);
+					inSongLyric.getMark().add(wordBox);
+					lrc.setMark(wordBox);
 				}
 			}
 
@@ -367,50 +302,6 @@ public class LyricConverter {
 		return buff.toString();
 	}
 
-	/********************************************************************
-	 * Write the file to the format of .csv file
-	 * 
-	 * @param inSong     The object of SongLyric that hold entire lyric
-	 * @param inFilename The filename that it will write to
-	 * 
-	 * @return Output to the .csv file
-	 * 
-	 * @author IntelleBitnify
-	 * @version 1.0 (10/6/2019)
-	 * @throws Exception 
-	 *********************************************************************/
-	@SuppressWarnings("resource")
-	public static String writeCSV(SongLyric inSongLyric) {
-		StringWriter writer = new StringWriter();
-
-		CSVWriter csvWriter = new CSVWriter(writer);
-		csvWriter.writeNext(new String[] {"from", "end", "lyric", "lyricTrans", "mark", "markDictionary", "markType", "markAPI", "markTrans"}, false);
-
-		try {
-			inSongLyric.getSong().stream().map(lrc -> {
-				LyricCSV csv = new LyricCSV();
-				csv.setStart(lrc.getFromTimestamp());
-				csv.setEnd(lrc.getToTimestamp());
-				csv.setLyric(lrc.getSourceLyric());
-				csv.setLyricTrans(lrc.getLyricTrans());
-				if (lrc.getMark() != null) {
-					csv.setMark(lrc.getMark().getWord());
-					csv.setMarkDictionary(lrc.getMark().getWordDictionary());
-					csv.setType(lrc.getMark().getType());
-					csv.setApi(lrc.getMark().getAPI());
-					csv.setTrans(lrc.getMark().getTrans());
-				}
-				return csv;
-			}).forEach(csv -> {
-				csvWriter.writeNext(new String[] {String.valueOf(csv.getStart()), String.valueOf(csv.getEnd()), csv.getLyric(), csv.getLyricTrans(), csv.getMark(), csv.getMarkDictionary(), csv.getType(), csv.getApi(), csv.getTrans()}, false);
-			});
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		return writer.getBuffer().toString();
-	}
-
 	@SuppressWarnings("resource")
 	public static byte[] writeExcel(SongLyric inSongLyric) {
 		// Blank workbook
@@ -424,7 +315,7 @@ public class LyricConverter {
         // Header
         Row row = sheet.createRow(rownum++); Cell cell;
 
-		String[] header = new String[] {"from", "end", "lyric", "lyricTrans", "mark", "markDictionary", "markType", "markAPI", "markTrans"};
+		String[] header = new String[] {"from", "end", "lyric", "lyricTrans", "mark", "markDictionary", "markType", "markAPI", "markTrans", "markX", "markY", "markTime"};
 
 		for (cellnum = 0; cellnum < header.length; cellnum++) {
 			cell = row.createCell(cellnum, CellType.STRING);
@@ -453,20 +344,35 @@ public class LyricConverter {
 				cell.setCellValue(lrc.getLyricTrans());
 
 				if (lrc.getMark() != null) {
-					cell = row.createCell(cellnum++, CellType.STRING);
-					cell.setCellValue(lrc.getMark().getWord());
+					WordBox wordBox   = lrc.getMark();
+					WordInfo wordInfo = wordBox.getWordDictionary();
 
 					cell = row.createCell(cellnum++, CellType.STRING);
-					cell.setCellValue(lrc.getMark().getWordDictionary());
+					cell.setCellValue(wordBox.getWord());
 
 					cell = row.createCell(cellnum++, CellType.STRING);
-					cell.setCellValue(lrc.getMark().getType());
+					cell.setCellValue(wordInfo.getWord());
 
 					cell = row.createCell(cellnum++, CellType.STRING);
-					cell.setCellValue(lrc.getMark().getAPI());
+					cell.setCellValue(wordInfo.getType());
 
 					cell = row.createCell(cellnum++, CellType.STRING);
-					cell.setCellValue(lrc.getMark().getTrans());
+					cell.setCellValue(wordInfo.getAPI());
+
+					cell = row.createCell(cellnum++, CellType.STRING);
+					cell.setCellValue(wordInfo.getTrans());
+
+					cell = row.createCell(cellnum++, CellType.NUMERIC);
+					if (wordBox.getX() != 0)
+						cell.setCellValue(wordBox.getX());
+					
+					cell = row.createCell(cellnum++, CellType.NUMERIC);
+					if (wordBox.getY() != 0)
+						cell.setCellValue(wordBox.getY());
+
+					cell = row.createCell(cellnum++, CellType.NUMERIC);
+					if (wordBox.getDuration() > 0)
+						cell.setCellValue(wordBox.getDuration());
 				}
 			}
 
