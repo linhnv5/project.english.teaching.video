@@ -26,7 +26,7 @@
 		<jsoup.version>1.8.3</jsoup.version>
 		<swagger.version>2.9.2</swagger.version>
 		<open.csv.version>4.0</open.csv.version>
-		<poi.version>3.17</poi.version>
+		<poi.version>4.1.1</poi.version>
 		<google.translate.version>1.93.0</google.translate.version>
 	</properties>
 
