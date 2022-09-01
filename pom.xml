@@ -23,7 +23,7 @@
 		<jsp.version>2.3.1</jsp.version>
 		<bramp.ffmpeg.version>0.6.2</bramp.ffmpeg.version>
 		<javacpp.ffmpeg.version>3.2.1-1.3</javacpp.ffmpeg.version>
-		<jsoup.version>1.8.3</jsoup.version>
+		<jsoup.version>1.15.3</jsoup.version>
 		<swagger.version>2.9.2</swagger.version>
 		<open.csv.version>4.0</open.csv.version>
 		<poi.version>3.17</poi.version>
